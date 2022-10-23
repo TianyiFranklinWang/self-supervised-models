@@ -6,6 +6,7 @@ import shutil
 import sys
 
 import pandas as pd
+import plotly.graph_objects as go
 import wandb
 
 
@@ -163,3 +164,29 @@ def save_files_to_wandb(log_folder, file_names):
         os.makedirs(os.path.join(wandb.run.dir, log_folder))
     for file_name in file_names:
         shutil.copy(os.path.join(log_folder, file_name), os.path.join(wandb.run.dir, log_folder, file_name))
+
+
+def plot_dashboard(df, x, y, title, log_folder):
+    fig = go.Figure()
+    fig.add_trace(
+        go.Scatter(
+            x=df[x],
+            y=df[y],
+            mode='lines',
+        )
+    )
+    fig.update_layout(
+        title_text=title,
+        title_x=0.5,
+        title_font_size=32,
+        autosize=False,
+        width=1920,
+        height=1080,
+        font=dict(
+            family="Times New Roman",
+            size=20,
+        )
+    )
+    fig.update_xaxes(title_text=x)
+    fig.update_yaxes(title_text=y)
+    fig.write_image(os.path.join(log_folder, f"{title.replace(' ', '_')}.png"))

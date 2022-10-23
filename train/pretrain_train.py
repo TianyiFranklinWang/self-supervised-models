@@ -18,7 +18,7 @@ from timm.optim import create_optimizer_v2
 from timm.scheduler import create_scheduler_v2
 from timm.utils import AverageMeter, NativeScaler, reduce_tensor
 from util.helper import count_parameters, resume_checkpoint, save_model, seed_everything
-from util.logger import save_files_to_wandb, save_metrics, update_history
+from util.logger import plot_dashboard, save_files_to_wandb, save_metrics, update_history
 
 
 def train_one_epoch(
@@ -98,6 +98,9 @@ def train_one_epoch(
         )
 
         history = update_history(history, metrics)
+
+        if not config.debug:
+            plot_dashboard(history, x='epoch', y='loss', title='Training Loss', log_folder=log_folder)
 
         if config.use_wandb and (not config.debug):
             wandb.log({
