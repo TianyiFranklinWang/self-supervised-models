@@ -82,6 +82,7 @@ def train_one_epoch(
     if hasattr(optimizer, 'sync_lookahead'):
         optimizer.sync_lookahead()
 
+    torch.distributed.barrier()
     epoch_time = time.time() - start_time
     lrl = [param_group['lr'] for param_group in optimizer.param_groups]
     lr = sum(lrl) / len(lrl)
@@ -302,6 +303,7 @@ def pretrain_train_main(config, device, log_folder=None):
         if config.scheduler:
             lr_scheduler.step(epoch=epoch + 1)
 
+    torch.distributed.barrier()
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))
 
