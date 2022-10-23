@@ -18,11 +18,10 @@ import torch
 import torch.nn as nn
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import named_apply, build_model_with_cfg, checkpoint_seq
-from .layers import trunc_normal_, SelectAdaptivePool2d, DropPath, ConvMlp, Mlp, LayerNorm2d, LayerNorm, \
-    create_conv2d, get_act_layer, make_divisible, to_ntuple
+from .helpers import build_model_with_cfg, checkpoint_seq, named_apply
+from .layers import ConvMlp, DropPath, LayerNorm, LayerNorm2d, Mlp, SelectAdaptivePool2d, create_conv2d, get_act_layer, \
+    make_divisible, to_ntuple, trunc_normal_
 from .registry import register_model
-
 
 __all__ = ['ConvNeXt']  # model_registry will add each entrypoint fn to this
 
@@ -294,7 +293,7 @@ class ConvNeXt(nn.Module):
             norm_layer = LayerNorm2d
             norm_layer_cl = norm_layer if conv_mlp else LayerNorm
         else:
-            assert conv_mlp,\
+            assert conv_mlp, \
                 'If a norm_layer is specified, conv MLP must be used so all norm expect rank-4, channels-first input'
             norm_layer_cl = norm_layer
 
@@ -359,11 +358,11 @@ class ConvNeXt(nn.Module):
         # otherwise pool -> norm -> fc, the default ConvNeXt ordering (pretrained FB weights)
         self.norm_pre = norm_layer(self.num_features) if head_norm_first else nn.Identity()
         self.head = nn.Sequential(OrderedDict([
-                ('global_pool', SelectAdaptivePool2d(pool_type=global_pool)),
-                ('norm', nn.Identity() if head_norm_first else norm_layer(self.num_features)),
-                ('flatten', nn.Flatten(1) if global_pool else nn.Identity()),
-                ('drop', nn.Dropout(self.drop_rate)),
-                ('fc', nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity())]))
+            ('global_pool', SelectAdaptivePool2d(pool_type=global_pool)),
+            ('norm', nn.Identity() if head_norm_first else norm_layer(self.num_features)),
+            ('flatten', nn.Flatten(1) if global_pool else nn.Identity()),
+            ('drop', nn.Dropout(self.drop_rate)),
+            ('fc', nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity())]))
 
         named_apply(partial(_init_weights, head_init_scale=head_init_scale), self)
 
@@ -508,7 +507,7 @@ def convnext_pico(pretrained=False, **kwargs):
 def convnext_pico_ols(pretrained=False, **kwargs):
     # timm nano variant with overlapping 3x3 conv stem
     model_args = dict(
-        depths=(2, 2, 6, 2), dims=(64, 128, 256, 512), conv_mlp=True,  stem_type='overlap_tiered', **kwargs)
+        depths=(2, 2, 6, 2), dims=(64, 128, 256, 512), conv_mlp=True, stem_type='overlap_tiered', **kwargs)
     model = _create_convnext('convnext_pico_ols', pretrained=pretrained, **model_args)
     return model
 

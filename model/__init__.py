@@ -1,6 +1,6 @@
-from .mae import *
 from .byol import *
 from .dino import *
+from .mae import *
 from .registry import *
 
 

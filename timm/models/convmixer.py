@@ -22,9 +22,12 @@ def _cfg(url='', **kwargs):
 
 
 default_cfgs = {
-    'convmixer_1536_20': _cfg(url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_1536_20_ks9_p7.pth.tar'),
-    'convmixer_768_32': _cfg(url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_768_32_ks7_p7_relu.pth.tar'),
-    'convmixer_1024_20_ks9_p14': _cfg(url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_1024_20_ks9_p14.pth.tar')
+    'convmixer_1536_20': _cfg(
+        url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_1536_20_ks9_p7.pth.tar'),
+    'convmixer_768_32': _cfg(
+        url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_768_32_ks7_p7_relu.pth.tar'),
+    'convmixer_1024_20_ks9_p14': _cfg(
+        url='https://github.com/tmp-iclr/convmixer/releases/download/timm-v1.0/convmixer_1024_20_ks9_p14.pth.tar')
 }
 
 
@@ -53,14 +56,14 @@ class ConvMixer(nn.Module):
         )
         self.blocks = nn.Sequential(
             *[nn.Sequential(
-                    Residual(nn.Sequential(
-                        nn.Conv2d(dim, dim, kernel_size, groups=dim, padding="same"),
-                        act_layer(),
-                        nn.BatchNorm2d(dim)
-                    )),
-                    nn.Conv2d(dim, dim, kernel_size=1),
+                Residual(nn.Sequential(
+                    nn.Conv2d(dim, dim, kernel_size, groups=dim, padding="same"),
                     act_layer(),
                     nn.BatchNorm2d(dim)
+                )),
+                nn.Conv2d(dim, dim, kernel_size=1),
+                act_layer(),
+                nn.BatchNorm2d(dim)
             ) for i in range(depth)]
         )
         self.pooling = SelectAdaptivePool2d(pool_type=global_pool, flatten=True)
@@ -84,7 +87,7 @@ class ConvMixer(nn.Module):
         if global_pool is not None:
             self.pooling = SelectAdaptivePool2d(pool_type=global_pool, flatten=True)
         self.head = nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity()
-          
+
     def forward_features(self, x):
         x = self.stem(x)
         if self.grad_checkpointing and not torch.jit.is_scripting():

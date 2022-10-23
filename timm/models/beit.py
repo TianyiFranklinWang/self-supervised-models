@@ -48,7 +48,7 @@ from torch.utils.checkpoint import checkpoint
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .helpers import build_model_with_cfg
-from .layers import PatchEmbed, Mlp, DropPath, trunc_normal_
+from .layers import DropPath, Mlp, PatchEmbed, trunc_normal_
 from .registry import register_model
 from .vision_transformer import checkpoint_filter_fn
 
@@ -434,7 +434,7 @@ def beit_base_patch16_224_in22k(pretrained=False, **kwargs):
 def beit_large_patch16_224(pretrained=False, **kwargs):
     model_kwargs = dict(
         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
+        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
     model = _create_beit('beit_large_patch16_224', pretrained=pretrained, **model_kwargs)
     return model
 
@@ -461,7 +461,7 @@ def beit_large_patch16_512(pretrained=False, **kwargs):
 def beit_large_patch16_224_in22k(pretrained=False, **kwargs):
     model_kwargs = dict(
         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
+        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
     model = _create_beit('beit_large_patch16_224_in22k', pretrained=pretrained, **model_kwargs)
     return model
 
@@ -488,7 +488,7 @@ def beitv2_base_patch16_224_in22k(pretrained=False, **kwargs):
 def beitv2_large_patch16_224(pretrained=False, **kwargs):
     model_kwargs = dict(
         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
+        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
     model = _create_beit('beitv2_large_patch16_224', pretrained=pretrained, **model_kwargs)
     return model
 
@@ -497,6 +497,6 @@ def beitv2_large_patch16_224(pretrained=False, **kwargs):
 def beitv2_large_patch16_224_in22k(pretrained=False, **kwargs):
     model_kwargs = dict(
         patch_size=16, embed_dim=1024, depth=24, num_heads=16, mlp_ratio=4, qkv_bias=True,
-        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5,  **kwargs)
+        use_abs_pos_emb=False, use_rel_pos_bias=True, init_values=1e-5, **kwargs)
     model = _create_beit('beitv2_large_patch16_224_in22k', pretrained=pretrained, **model_kwargs)
     return model

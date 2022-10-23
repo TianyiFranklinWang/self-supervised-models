@@ -12,20 +12,17 @@ Reference impl via darknet cfg files at https://github.com/WongKinYiu/CrossStage
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import collections.abc
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict, dataclass
 from functools import partial
-from typing import Any, Callable, Dict, Optional, Tuple, Union
+from typing import Any, Dict, Optional, Tuple, Union
 
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import build_model_with_cfg, named_apply, MATCH_PREV_GROUP
-from .layers import ClassifierHead, ConvNormAct, ConvNormActAa, DropPath, get_attn, create_act_layer, make_divisible
+from .helpers import MATCH_PREV_GROUP, build_model_with_cfg, named_apply
+from .layers import ClassifierHead, ConvNormAct, ConvNormActAa, DropPath, create_act_layer, get_attn, make_divisible
 from .registry import register_model
-
 
 __all__ = ['CspNet']  # model_registry will add each entrypoint fn to this
 
@@ -416,7 +413,7 @@ class BottleneckBlock(nn.Module):
         x = self.attn3(x)
         x = self.drop_path(x) + shortcut
         # FIXME partial shortcut needed if first block handled as per original, not used for my current impl
-        #x[:, :shortcut.size(1)] += shortcut
+        # x[:, :shortcut.size(1)] += shortcut
         x = self.act3(x)
         return x
 
@@ -503,6 +500,7 @@ class EdgeBlock(nn.Module):
 
 class CrossStage(nn.Module):
     """Cross Stage."""
+
     def __init__(
             self,
             in_chs,
@@ -582,6 +580,7 @@ class CrossStage3(nn.Module):
     """Cross Stage 3.
     Similar to CrossStage, but with only one transition conv for the output.
     """
+
     def __init__(
             self,
             in_chs,
@@ -679,7 +678,7 @@ class DarkStage(nn.Module):
 
         if avg_down:
             self.conv_down = nn.Sequential(
-                nn.AvgPool2d(2) if stride == 2 else nn.Identity(),   # FIXME dilation handling
+                nn.AvgPool2d(2) if stride == 2 else nn.Identity(),  # FIXME dilation handling
                 ConvNormActAa(in_chs, out_chs, kernel_size=1, stride=1, groups=groups, **conv_kwargs)
             )
         else:

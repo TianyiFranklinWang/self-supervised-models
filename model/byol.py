@@ -8,7 +8,7 @@ import torchvision
 from torch import nn
 from torchvision import transforms as T
 
-from model import register_model
+from .registry import register_model
 
 
 # helper functions

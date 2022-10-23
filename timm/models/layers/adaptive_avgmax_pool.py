@@ -79,6 +79,7 @@ class AdaptiveCatAvgMaxPool2d(nn.Module):
 class SelectAdaptivePool2d(nn.Module):
     """Selectable global pooling layer with dynamic input kernel size
     """
+
     def __init__(self, output_size=1, pool_type='fast', flatten=False):
         super(SelectAdaptivePool2d, self).__init__()
         self.pool_type = pool_type or ''  # convert other falsy values to empty string for consistent TS typing
@@ -115,4 +116,3 @@ class SelectAdaptivePool2d(nn.Module):
         return self.__class__.__name__ + ' (' \
                + 'pool_type=' + self.pool_type \
                + ', flatten=' + str(self.flatten) + ')'
-

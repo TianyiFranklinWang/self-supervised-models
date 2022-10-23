@@ -32,16 +32,26 @@ def _cfg(url='', **kwargs):
 
 
 default_cfgs = {
-    'dla34': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla34-2b83ff04.pth'),
-    'dla46_c': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla46_c-9b68d685.pth'),
-    'dla46x_c': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla46x_c-6bc5b5c8.pth'),
-    'dla60x_c': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60x_c-a38e054a.pth'),
-    'dla60': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60-9e91bd4d.pth'),
-    'dla60x': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60x-6818f6bb.pth'),
-    'dla102': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102-21f57b54.pth'),
-    'dla102x': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102x-7ec0aa2a.pth'),
-    'dla102x2': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102x2-ac4239c4.pth'),
-    'dla169': _cfg(url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla169-7c767967.pth'),
+    'dla34': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla34-2b83ff04.pth'),
+    'dla46_c': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla46_c-9b68d685.pth'),
+    'dla46x_c': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla46x_c-6bc5b5c8.pth'),
+    'dla60x_c': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60x_c-a38e054a.pth'),
+    'dla60': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60-9e91bd4d.pth'),
+    'dla60x': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla60x-6818f6bb.pth'),
+    'dla102': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102-21f57b54.pth'),
+    'dla102x': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102x-7ec0aa2a.pth'),
+    'dla102x2': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla102x2-ac4239c4.pth'),
+    'dla169': _cfg(
+        url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/dla169-7c767967.pth'),
     'dla60_res2net': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-res2net/res2net_dla60_4s-d88db7f9.pth'),
     'dla60_res2next': _cfg(
@@ -387,7 +397,7 @@ def dla60_res2net(pretrained=False, **kwargs):
 
 
 @register_model
-def dla60_res2next(pretrained=False,**kwargs):
+def dla60_res2next(pretrained=False, **kwargs):
     model_kwargs = dict(
         levels=(1, 1, 1, 2, 3, 1), channels=(16, 32, 128, 256, 512, 1024),
         block=DlaBottle2neck, cardinality=8, base_width=4, **kwargs)

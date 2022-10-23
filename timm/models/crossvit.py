@@ -24,21 +24,20 @@ Modifications and additions for timm hacked together by / Copyright 2021, Ross W
 Modifed from Timm. https://github.com/rwightman/pytorch-image-models/blob/master/timm/models/vision_transformer.py
 
 """
+from functools import partial
+from typing import List
 from typing import Tuple
 
 import torch
-import torch.nn as nn
-import torch.nn.functional as F
 import torch.hub
-from functools import partial
-from typing import List
+import torch.nn as nn
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .fx_features import register_notrace_function
 from .helpers import build_model_with_cfg
-from .layers import DropPath, to_2tuple, trunc_normal_, _assert
+from .layers import DropPath, _assert, to_2tuple, trunc_normal_
 from .registry import register_model
-from .vision_transformer import Mlp, Block
+from .vision_transformer import Block
 
 
 def _cfg(url='', **kwargs):
@@ -443,7 +442,7 @@ def _create_crossvit(variant, pretrained=False, **kwargs):
 @register_model
 def crossvit_tiny_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[96, 192], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[96, 192], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
         num_heads=[3, 3], mlp_ratio=[4, 4, 1], **kwargs)
     model = _create_crossvit(variant='crossvit_tiny_240', pretrained=pretrained, **model_args)
     return model
@@ -452,7 +451,7 @@ def crossvit_tiny_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_small_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
         num_heads=[6, 6], mlp_ratio=[4, 4, 1], **kwargs)
     model = _create_crossvit(variant='crossvit_small_240', pretrained=pretrained, **model_args)
     return model
@@ -461,7 +460,7 @@ def crossvit_small_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_base_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[384, 768], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[384, 768], depth=[[1, 4, 0], [1, 4, 0], [1, 4, 0]],
         num_heads=[12, 12], mlp_ratio=[4, 4, 1], **kwargs)
     model = _create_crossvit(variant='crossvit_base_240', pretrained=pretrained, **model_args)
     return model
@@ -470,7 +469,7 @@ def crossvit_base_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_9_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[128, 256], depth=[[1, 3, 0], [1, 3, 0], [1, 3, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[128, 256], depth=[[1, 3, 0], [1, 3, 0], [1, 3, 0]],
         num_heads=[4, 4], mlp_ratio=[3, 3, 1], **kwargs)
     model = _create_crossvit(variant='crossvit_9_240', pretrained=pretrained, **model_args)
     return model
@@ -479,7 +478,7 @@ def crossvit_9_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_15_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
         num_heads=[6, 6], mlp_ratio=[3, 3, 1], **kwargs)
     model = _create_crossvit(variant='crossvit_15_240', pretrained=pretrained, **model_args)
     return model
@@ -506,7 +505,7 @@ def crossvit_9_dagger_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_15_dagger_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
         num_heads=[6, 6], mlp_ratio=[3, 3, 1], multi_conv=True, **kwargs)
     model = _create_crossvit(variant='crossvit_15_dagger_240', pretrained=pretrained, **model_args)
     return model
@@ -515,7 +514,7 @@ def crossvit_15_dagger_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_15_dagger_408(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 384/408), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
+        img_scale=(1.0, 384 / 408), patch_size=[12, 16], embed_dim=[192, 384], depth=[[1, 5, 0], [1, 5, 0], [1, 5, 0]],
         num_heads=[6, 6], mlp_ratio=[3, 3, 1], multi_conv=True, **kwargs)
     model = _create_crossvit(variant='crossvit_15_dagger_408', pretrained=pretrained, **model_args)
     return model
@@ -524,7 +523,7 @@ def crossvit_15_dagger_408(pretrained=False, **kwargs):
 @register_model
 def crossvit_18_dagger_240(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 224/240), patch_size=[12, 16], embed_dim=[224, 448], depth=[[1, 6, 0], [1, 6, 0], [1, 6, 0]],
+        img_scale=(1.0, 224 / 240), patch_size=[12, 16], embed_dim=[224, 448], depth=[[1, 6, 0], [1, 6, 0], [1, 6, 0]],
         num_heads=[7, 7], mlp_ratio=[3, 3, 1], multi_conv=True, **kwargs)
     model = _create_crossvit(variant='crossvit_18_dagger_240', pretrained=pretrained, **model_args)
     return model
@@ -533,7 +532,7 @@ def crossvit_18_dagger_240(pretrained=False, **kwargs):
 @register_model
 def crossvit_18_dagger_408(pretrained=False, **kwargs):
     model_args = dict(
-        img_scale=(1.0, 384/408), patch_size=[12, 16], embed_dim=[224, 448], depth=[[1, 6, 0], [1, 6, 0], [1, 6, 0]],
+        img_scale=(1.0, 384 / 408), patch_size=[12, 16], embed_dim=[224, 448], depth=[[1, 6, 0], [1, 6, 0], [1, 6, 0]],
         num_heads=[7, 7], mlp_ratio=[3, 3, 1], multi_conv=True, **kwargs)
     model = _create_crossvit(variant='crossvit_18_dagger_408', pretrained=pretrained, **model_args)
     return model

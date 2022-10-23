@@ -15,8 +15,8 @@ import numpy as np
 import torch
 import torch.nn as nn
 
-from model.registry import register_model
 from timm.models.vision_transformer import Block, PatchEmbed
+from .registry import register_model
 
 
 def get_2d_sincos_pos_embed(embed_dim, grid_size, cls_token=False):

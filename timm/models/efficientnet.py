@@ -42,10 +42,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD, IMAGENET_INCEPTION_MEAN, IMAGENET_INCEPTION_STD
 from .efficientnet_blocks import SqueezeExcite
-from .efficientnet_builder import EfficientNetBuilder, decode_arch_def, efficientnet_init_weights,\
+from .efficientnet_builder import EfficientNetBuilder, decode_arch_def, efficientnet_init_weights, \
     round_channels, resolve_bn_args, resolve_act_layer, BN_EPS_TF_DEFAULT
 from .features import FeatureInfo, FeatureHooks
 from .helpers import build_model_with_cfg, pretrained_cfg_for_features, checkpoint_seq
@@ -180,13 +179,16 @@ default_cfgs = {
 
     'efficientnet_b1_pruned': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tresnet/effnetb1_pruned-bea43a3a.pth',
-        input_size=(3, 240, 240), pool_size=(8, 8), crop_pct=0.882, mean=IMAGENET_INCEPTION_MEAN, std=IMAGENET_INCEPTION_STD),
+        input_size=(3, 240, 240), pool_size=(8, 8), crop_pct=0.882, mean=IMAGENET_INCEPTION_MEAN,
+        std=IMAGENET_INCEPTION_STD),
     'efficientnet_b2_pruned': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tresnet/effnetb2_pruned-08c1b27c.pth',
-        input_size=(3, 260, 260), pool_size=(9, 9), crop_pct=0.890, mean=IMAGENET_INCEPTION_MEAN, std=IMAGENET_INCEPTION_STD),
+        input_size=(3, 260, 260), pool_size=(9, 9), crop_pct=0.890, mean=IMAGENET_INCEPTION_MEAN,
+        std=IMAGENET_INCEPTION_STD),
     'efficientnet_b3_pruned': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tresnet/effnetb3_pruned-59ecf72d.pth',
-        input_size=(3, 300, 300), pool_size=(10, 10), crop_pct=0.904, mean=IMAGENET_INCEPTION_MEAN, std=IMAGENET_INCEPTION_STD),
+        input_size=(3, 300, 300), pool_size=(10, 10), crop_pct=0.904, mean=IMAGENET_INCEPTION_MEAN,
+        std=IMAGENET_INCEPTION_STD),
 
     'efficientnetv2_rw_t': _cfg(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-weights/efficientnetv2_t_agc-3620981a.pth',
@@ -1209,7 +1211,7 @@ def _gen_mixnet_m(variant, channel_multiplier=1.0, depth_multiplier=1.0, pretrai
 
 
 def _gen_tinynet(
-    variant, model_width=1.0, depth_multiplier=1.0, pretrained=False, **kwargs
+        variant, model_width=1.0, depth_multiplier=1.0, pretrained=False, **kwargs
 ):
     """Creates a TinyNet model.
     """
@@ -1503,7 +1505,7 @@ def efficientnet_b0_g16_evos(pretrained=False, **kwargs):
     """ EfficientNet-B0 w/ group 16 conv + EvoNorm"""
     model = _gen_efficientnet(
         'efficientnet_b0_g16_evos', group_size=16, channel_divisor=16,
-        pretrained=pretrained, **kwargs) #norm_layer=partial(EvoNorm2dS0, group_size=16),
+        pretrained=pretrained, **kwargs)  # norm_layer=partial(EvoNorm2dS0, group_size=16),
     return model
 
 
@@ -1542,6 +1544,7 @@ def efficientnet_es_pruned(pretrained=False, **kwargs):
         'efficientnet_es_pruned', channel_multiplier=1.0, depth_multiplier=1.0, pretrained=pretrained, **kwargs)
     return model
 
+
 @register_model
 def efficientnet_em(pretrained=False, **kwargs):
     """ EfficientNet-Edge-Medium. """
@@ -1557,12 +1560,14 @@ def efficientnet_el(pretrained=False, **kwargs):
         'efficientnet_el', channel_multiplier=1.2, depth_multiplier=1.4, pretrained=pretrained, **kwargs)
     return model
 
+
 @register_model
 def efficientnet_el_pruned(pretrained=False, **kwargs):
     """ EfficientNet-Edge-Large pruned. For more info: https://github.com/DeGirum/pruned-models/releases/tag/efficientnet_v1.0"""
     model = _gen_efficientnet_edge(
         'efficientnet_el_pruned', channel_multiplier=1.2, depth_multiplier=1.4, pretrained=pretrained, **kwargs)
     return model
+
 
 @register_model
 def efficientnet_cc_b0_4e(pretrained=False, **kwargs):
@@ -2144,7 +2149,6 @@ def tf_efficientnet_lite4(pretrained=False, **kwargs):
     model = _gen_efficientnet_lite(
         'tf_efficientnet_lite4', channel_multiplier=1.4, depth_multiplier=1.8, pretrained=pretrained, **kwargs)
     return model
-
 
 
 @register_model

@@ -4,14 +4,17 @@ Hacked together by / Copyright 2021, Ross Wightman
 """
 import os
 
-from torchvision.datasets import CIFAR100, CIFAR10, MNIST, QMNIST, KMNIST, FashionMNIST, ImageNet, ImageFolder
+from torchvision.datasets import CIFAR10, CIFAR100, FashionMNIST, ImageFolder, ImageNet, KMNIST, MNIST, QMNIST
+
 try:
     from torchvision.datasets import Places365
+
     has_places365 = True
 except ImportError:
     has_places365 = False
 try:
     from torchvision.datasets import INaturalist
+
     has_inaturalist = True
 except ImportError:
     has_inaturalist = False
@@ -43,6 +46,7 @@ def _search_split(root, split):
             if os.path.exists(try_root):
                 return try_root
         return root
+
     if split_name in _TRAIN_SYNONYM:
         root = _try(_TRAIN_SYNONYM)
     elif split_name in _EVAL_SYNONYM:

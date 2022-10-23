@@ -11,6 +11,7 @@ import torch.nn.functional as F
 class LabelSmoothingCrossEntropy(nn.Module):
     """ NLL loss with label smoothing.
     """
+
     def __init__(self, smoothing=0.1):
         super(LabelSmoothingCrossEntropy, self).__init__()
         assert smoothing < 1.0

@@ -5,12 +5,13 @@ Lifted from https://github.com/pytorch/fairseq/blob/master/fairseq/optim/adafact
 Original header/copyright below.
 
 """
+import math
+
 # Copyright (c) Facebook, Inc. and its affiliates.
 #
 # This source code is licensed under the MIT license found in the
 # LICENSE file in the root directory of this source tree.
 import torch
-import math
 
 
 class Adafactor(torch.optim.Optimizer):
@@ -44,7 +45,7 @@ class Adafactor(torch.optim.Optimizer):
         if warmup_init and not relative_step:
             raise ValueError('warmup_init requires relative_step=True')
 
-        beta1 = None if betas is None else betas[0]   # make it compat with standard betas arg
+        beta1 = None if betas is None else betas[0]  # make it compat with standard betas arg
         defaults = dict(lr=lr, eps=eps, eps_scale=eps_scale, clip_threshold=clip_threshold, decay_rate=decay_rate,
                         beta1=beta1, weight_decay=weight_decay, scale_parameter=scale_parameter,
                         relative_step=relative_step, warmup_init=warmup_init)

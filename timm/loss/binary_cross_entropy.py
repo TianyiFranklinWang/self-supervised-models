@@ -13,6 +13,7 @@ class BinaryCrossEntropy(nn.Module):
     """ BCE with optional one-hot from dense targets, label smoothing, thresholding
     NOTE for experiments comparing CE to BCE /w label smoothing, may remove
     """
+
     def __init__(
             self, smoothing=0.1, target_threshold: Optional[float] = None, weight: Optional[torch.Tensor] = None,
             reduction: str = 'mean', pos_weight: Optional[torch.Tensor] = None):
