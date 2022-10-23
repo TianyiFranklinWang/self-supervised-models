@@ -201,7 +201,7 @@ class Dino(nn.Module):
     def __init__(
             self,
             net,
-            image_size=224,
+            image_size,
             hidden_layer=-2,
             projection_hidden_size=256,
             num_classes_K=65336,
@@ -322,7 +322,7 @@ class Dino(nn.Module):
 
 
 @register_model
-def dino_resnet_50(**kwargs):
+def dino_resnet_50(image_size=224, **kwargs):
     net = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-    model = Dino(net=net, **kwargs)
+    model = Dino(net=net, image_size=image_size, **kwargs)
     return model

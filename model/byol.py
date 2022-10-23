@@ -189,7 +189,7 @@ class BYOL(nn.Module):
     def __init__(
             self,
             net,
-            image_size=224,
+            image_size,
             hidden_layer=-2,
             projection_size=256,
             projection_hidden_size=4096,
@@ -289,7 +289,7 @@ class BYOL(nn.Module):
 
 
 @register_model
-def byol_resnet_50(**kwargs):
+def byol_resnet_50(image_size=224, **kwargs):
     net = torchvision.models.resnet50(weights=torchvision.models.ResNet50_Weights.DEFAULT)
-    model = BYOL(net=net, **kwargs)
+    model = BYOL(net=net, image_size=image_size, **kwargs)
     return model
