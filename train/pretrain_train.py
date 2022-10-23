@@ -327,5 +327,5 @@ def pretrain_train_main(config, device, log_folder=None):
                     file_names.append(f'{config.model_name}_last.pt')
                 save_files_to_wandb(log_folder, file_names=file_names)
 
-        print(f"\n -> Best loss : {best_loss :.3f}")
+        print(f"\n    - Best loss : {best_loss :.3f}")
         print(f'\n -> Training protocol finished (Total training time: {total_time_str})')
