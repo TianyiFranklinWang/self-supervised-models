@@ -63,7 +63,7 @@ def save_config(config, log_path):
 
 def convert_config_to_string(config_dict):
     for key, val in config_dict.items():
-        if type(val) not in [str, bool, int, float, list, dict, type(None)]:
+        if type(val) not in [str, bool, int, float, list, dict, tuple, type(None)]:
             config_dict[key] = str(val)
         if type(val) is dict:
             convert_config_to_string(val)

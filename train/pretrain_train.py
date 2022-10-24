@@ -114,6 +114,11 @@ def train_one_epoch(
                 file_name = f"{config.model_name}_best.pt"
                 save_model(config, metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
                 print("\t Best model saved", end='')
+
+        if config.save_interval > 0 and (metrics['epoch'] % config.save_interval == 0):
+            file_name = f"{config.model_name}_epoch{metrics['epoch']}.pt"
+            save_model(config, metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
+            print("\t Intermediate model saved", end='')
         print("")
 
     return history, best_loss
@@ -329,5 +334,7 @@ def pretrain_train_main(config, device, log_folder=None):
                     file_names.append(f'{config.model_name}_last.pt')
                 save_files_to_wandb(log_folder, file_names=file_names)
 
-        print(f"\n    - Best loss : {best_loss :.3f}")
-        print(f'\n -> Training protocol finished (Total training time: {total_time_str})')
+        print(f"\n -> Training summary")
+        print(f"    - Best loss: {best_loss :.3f}")
+        print(f"    - Total time: {total_time_str}")
+        print(f'\n -> Training protocol finished')

@@ -19,6 +19,7 @@ class PretrainBaseConfig(ABC):
         self.log_path = "./logs"
         self.save_last = True
         self.save_best = False
+        self.save_interval = 50
         self.use_wandb = True
         self.wandb_log_freq = 50
         self.wandb_project_name = None
