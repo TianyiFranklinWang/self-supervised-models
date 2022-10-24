@@ -56,8 +56,7 @@ def train_one_epoch(
 
         loss_value = loss.item()
         if not math.isfinite(loss_value):
-            print(f"Loss is {loss_value}, stopping training.")
-            sys.exit(1)
+            raise RuntimeError(f"Loss is {loss_value}, training protocol aborted")
 
         optimizer.zero_grad()
         loss_scaler(
