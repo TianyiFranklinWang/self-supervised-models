@@ -113,7 +113,7 @@ def train_one_epoch(
             best_loss = metrics['loss']
             if config.save_best and (not config.debug):
                 file_name = f"{config.model_name}_best.pt"
-                save_model(config, epoch, model, loss_scaler, optimizer, log_folder, file_name)
+                save_model(config, metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
                 print("\t Best model saved", end='')
         print("")
 
@@ -198,10 +198,10 @@ def pretrain_train_main(config, device, log_folder=None):
     resume_epoch = None
     if config.resume:
         if verbose:
-            print(f"    - Resuming from checkpoint {config.resum}")
+            print(f"    - Resuming from checkpoint {config.resume}")
         resume_epoch = resume_checkpoint(
             model,
-            config.resum,
+            config.resume,
             optimizer=None if config.no_resume_opt else optimizer,
             loss_scaler=None if config.no_resume_opt else loss_scaler,
             verbose=True if verbose else False

@@ -23,7 +23,10 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
         if isinstance(checkpoint, dict) and 'state_dict' in checkpoint:
             state_dict = clean_state_dict(checkpoint['state_dict'])
-            model.load_state_dict(state_dict)
+            if hasattr(model, 'net'):
+                model.net.load_state_dict(state_dict)
+            else:
+                model.load_state_dict(state_dict)
             if verbose:
                 print("        - Checkpoint loaded")
 
@@ -41,7 +44,10 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
                 if verbose:
                     print(f"        - Training restored from epoch {resume_epoch}")
         else:
-            model.load_state_dict(checkpoint)
+            if hasattr(model, 'net'):
+                model.net.load_state_dict(checkpoint)
+            else:
+                model.load_state_dict(checkpoint)
             if verbose:
                 print("        - Checkpoint loaded")
         return resume_epoch
@@ -73,7 +79,7 @@ def save_model(config, epoch, model, loss_scaler, optimizer, log_folder, file_na
                  'state_dict': get_state_dict(model, unwrap_model),
                  'optimizer': optimizer.state_dict(),
                  'config': convert_config_to_string(copy.deepcopy(config.__dict__)),
-                 loss_scaler.state_dict_key: loss_scaler.state_dict_key}
+                 loss_scaler.state_dict_key: loss_scaler.state_dict()}
     save_path = os.path.join(log_folder, file_name)
     torch.save(save_sate, save_path)
 
