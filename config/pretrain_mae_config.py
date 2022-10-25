@@ -9,15 +9,14 @@ from .registry import register_config
 class PretrainMAEConfig(PretrainBaseConfig):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-
-        self.wandb_project_name = "self-supervised-models"
-        self.wandb_exp_name = f"pretrain_{self.model_name}"
-
         self.model_name = "mae_vit_base_patch16"
         self.mask_ratio = 0.75
         self.model_kwargs = {'mask_ratio': self.mask_ratio}
         self.batch_size = 8
         self.lr_base_size = 8
+
+        self.wandb_project_name = "self-supervised-models"
+        self.wandb_exp_name = f"pretrain_{self.model_name}"
 
         self.optimizer = 'adamw'
         self.weight_decay = 0.05
