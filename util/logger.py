@@ -69,11 +69,11 @@ def convert_config_to_string(config_dict):
     for key, val in config_dict.items():
         if type(val) not in [str, bool, int, float, list, dict, tuple, type(None)]:
             config_dict[key] = str(val)
-        if type(val) is dict:
+        if isinstance(val, dict):
             convert_config_to_string(val)
 
 
-class Logger(object):
+class Logger:
     """
     Simple logger that saves what is printed in a file
     """
@@ -111,7 +111,6 @@ def create_wandb_logger(config, log_folder, log_name):
     print(f"            - w&b project name: {config.wandb_project_name}")
     print(f"            - w&b experiment name: {config.wandb_exp_name}_{log_name}")
 
-    import wandb
     wandb.init(
         project=config.wandb_project_name,
         name=f"{config.wandb_exp_name}_{log_name}",

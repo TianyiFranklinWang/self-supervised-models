@@ -45,7 +45,7 @@ def train_one_epoch(
     model.train()
     num_batches_per_epoch = len(loader)
     num_updates = epoch * num_batches_per_epoch
-    for batch_idx, (samples, _) in enumerate(loader):
+    for samples, _ in loader:
         samples = samples.to(device, non_blocking=True)
 
         with amp_autocast():
@@ -87,7 +87,7 @@ def train_one_epoch(
         lr = get_lr(optimizer)
         meter.update_metrics(lr, 'current_epoch_time')
 
-        print(f"    - ", end='')
+        print("    - ", end='')
         meter.print_metrics()
 
         meter.update_history()
@@ -146,17 +146,17 @@ def pretrain_train_main(config, device, log_folder=None):
     if verbose:
         print(f"        - Image size: {config.image_size}")
         print(f"        - Custom model setting: {config.model_kwargs}")
-        print(f"        - Total params: {count_parameters(model, all=True)}")
-        print(f"        - Trainable params: {count_parameters(model, all=False)}")
+        print(f"        - Total params: {count_parameters(model, only_trainable=False)}")
+        print(f"        - Trainable params: {count_parameters(model, only_trainable=True)}")
 
     if config.aot_autograd:
         if verbose:
-            print(f"        - Performing memory efficient fusion")
+            print("        - Performing memory efficient fusion")
         model = memory_efficient_fusion(model)
 
     if config.lr is None:
         if verbose:
-            print(f"    - Calculating learning rate")
+            print("    - Calculating learning rate")
         global_batch_size = config.batch_size * world_size
         batch_ratio = global_batch_size / config.lr_base_size
         config.lr = config.lr_base * batch_ratio
@@ -167,12 +167,12 @@ def pretrain_train_main(config, device, log_folder=None):
             print(f"        - Global batch_size: {global_batch_size}")
     else:
         if verbose:
-            print(f"    - Setting learning rate")
+            print("    - Setting learning rate")
             print(f"        - Learning rate: {config.lr}")
             print(f"        - Local batch size: {config.batch_size}")
 
     if verbose:
-        print(f"    - Creating optimizer")
+        print("    - Creating optimizer")
         print(f"        - Optimizer: {config.optimizer}")
         print(f"        - Learning rate: {config.lr}")
         print(f"        - Weight decay: {config.weight_decay}")
@@ -188,7 +188,7 @@ def pretrain_train_main(config, device, log_folder=None):
                                     )
 
     if verbose:
-        print(f"    - Setting mixed precision training")
+        print("    - Setting mixed precision training")
     amp_autocast = partial(torch.autocast, device_type=device.type, dtype=config.amp_dtype)
     loss_scaler = NativeScaler()
 
@@ -201,7 +201,7 @@ def pretrain_train_main(config, device, log_folder=None):
             config.resume,
             optimizer=None if config.no_resume_opt else optimizer,
             loss_scaler=None if config.no_resume_opt else loss_scaler,
-            verbose=True if verbose else False
+            verbose=verbose,
         )
 
     if verbose:
@@ -216,7 +216,7 @@ def pretrain_train_main(config, device, log_folder=None):
             wandb.watch(model, log_freq=config.wandb_log_freq)
 
     if verbose:
-        print(f"    - Creating training dataset")
+        print("    - Creating training dataset")
     dataset_train = datasets.ImageFolder(os.path.join(config.data_path, config.train_folder_name),
                                          transform=config.dataset_transform_train)
     if verbose:
@@ -225,7 +225,7 @@ def pretrain_train_main(config, device, log_folder=None):
         print(f"        - Transforms: {config.dataset_transform_train}")
 
     if verbose:
-        print(f"    - Initializing data loader with distributed sampler")
+        print("    - Initializing data loader with distributed sampler")
     sampler_train = torch.utils.data.DistributedSampler(
         dataset_train, num_replicas=world_size, rank=rank, shuffle=True
     )
@@ -329,7 +329,7 @@ def pretrain_train_main(config, device, log_folder=None):
                     file_names.append(f'{config.model_name}_last.pt')
                 save_files_to_wandb(log_folder, file_names=file_names)
 
-        print(f"\n -> Training summary")
+        print("\n -> Training summary")
         print(f"    - Best loss: {meter.best_loss :.3f}")
         print(f"    - Total time: {str(datetime.timedelta(seconds=int(meter.timers['total_training_time'])))}")
-        print(f'\n -> Training protocol finished')
+        print('\n -> Training protocol finished')

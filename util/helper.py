@@ -55,19 +55,19 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
         raise FileNotFoundError(f"No such checkpoint file {checkpoint_path}")
 
 
-def count_parameters(model, all=False):
+def count_parameters(model, only_trainable=False):
     """
     Count the parameters of a model.
 
     Args:
         model (torch model): Model to count the parameters of.
-        all (bool, optional):  Whether to count not trainable parameters. Defaults to False.
+        only_trainable (bool, optional):  Whether to count not trainable parameters. Defaults to False.
 
     Returns:
         int: Number of parameters.
     """
 
-    if all:
+    if not only_trainable:
         return sum(p.numel() for p in model.parameters())
     else:
         return sum(p.numel() for p in model.parameters() if p.requires_grad)
@@ -91,10 +91,10 @@ def unwrap_model(model):
 def get_state_dict(model, unwrap_fn=unwrap_model):
     unwrapped_model = unwrap_fn(model)
     if hasattr(unwrapped_model, 'net'):
-        dict = unwrapped_model.net.state_dict()
+        dic = unwrapped_model.net.state_dict()
     else:
-        dict = unwrapped_model.state_dict()
-    return dict
+        dic = unwrapped_model.state_dict()
+    return dic
 
 
 def get_lr(optimizer):
