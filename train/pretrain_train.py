@@ -1,8 +1,6 @@
 import datetime
 import math
 import os
-import sys
-import time
 from functools import partial
 
 import torch
@@ -16,9 +14,9 @@ from model import create_model
 from timm.models import model_parameters
 from timm.optim import create_optimizer_v2
 from timm.scheduler import create_scheduler_v2
-from timm.utils import AverageMeter, NativeScaler, reduce_tensor
-from util.helper import count_parameters, resume_checkpoint, save_model, seed_everything
-from util.logger import plot_dashboard, save_files_to_wandb, save_metrics, update_history
+from timm.utils import NativeScaler, reduce_tensor
+from util.helper import count_parameters, get_lr, resume_checkpoint, save_model, seed_everything
+from util.logger import PretrainMeter, save_files_to_wandb
 
 
 def train_one_epoch(
@@ -32,20 +30,19 @@ def train_one_epoch(
         amp_autocast,
         loss_scaler,
         lr_scheduler,
-        history,
-        best_loss,
         log_folder,
+        meter
 ):
     rank = torch.distributed.get_rank()
     world_size = torch.distributed.get_world_size()
     verbose = (rank == 0)
 
     second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
-    avg_loss = AverageMeter()
+    if verbose:
+        meter.init_metrics(epoch, epochs)
+        meter.start_timer('current_epoch_time')
 
     model.train()
-
-    start_time = time.time()
     num_batches_per_epoch = len(loader)
     num_updates = epoch * num_batches_per_epoch
     for batch_idx, (samples, _) in enumerate(loader):
@@ -72,9 +69,11 @@ def train_one_epoch(
 
         torch.cuda.synchronize()
 
-        num_updates += 1
         reduced_loss = reduce_tensor(loss.data, world_size)
-        avg_loss.update(reduced_loss.item(), samples.size(0))
+        if verbose:
+            meter.metrics['avg_loss'].update(reduced_loss.item(), samples.size(0))
+
+        num_updates += 1
         if lr_scheduler is not None:
             lr_scheduler.step_update(num_updates=num_updates)
 
@@ -82,46 +81,40 @@ def train_one_epoch(
         optimizer.sync_lookahead()
 
     torch.distributed.barrier()
-    epoch_time = time.time() - start_time
-    lrl = [param_group['lr'] for param_group in optimizer.param_groups]
-    lr = sum(lrl) / len(lrl)
     if verbose:
-        metrics = save_metrics(epoch, epochs, lr, epoch_time, avg_loss.avg)
-        print(
-            f"    - "
-            f"Epoch {metrics['epoch']:02d}/{metrics['epochs']:02d} \t"
-            f" lr={metrics['lr']:.1e}\t"
-            f" t={metrics['epoch_time']:.0f}s\t"
-            f" loss={metrics['loss']:.3f}",
-            end=''
-        )
+        meter.stop_timer('current_epoch_time')
 
-        history = update_history(history, metrics)
+        lr = get_lr(optimizer)
+        meter.update_metrics(lr, 'current_epoch_time')
+
+        print(f"    - ", end='')
+        meter.print_metrics()
+
+        meter.update_history()
 
         if not config.debug:
-            plot_dashboard(history, x='epoch', y='loss', title='Training Loss', log_folder=log_folder)
+            meter.plot_dashboard(x='epoch', y='loss', title='Training Loss')
+            meter.plot_dashboard(x='epoch', y='lr', title='Learning Rate')
 
         if config.use_wandb and (not config.debug):
             wandb.log({
-                "epoch": metrics['epoch'],
-                "lr": metrics['lr'],
-                "train/loss": metrics['loss']
+                "epoch": meter.metrics['epoch'],
+                "lr": meter.metrics['lr'],
+                "train/loss": meter.metrics['avg_loss']
             })
 
-        if metrics['loss'] < best_loss:
-            best_loss = metrics['loss']
+        if meter.metrics['avg_loss'] < meter.best_loss:
+            meter.best_loss = meter.metrics['avg_loss']
             if config.save_best and (not config.debug):
                 file_name = f"{config.model_name}_best.pt"
-                save_model(config, metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
+                save_model(config, meter.metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
                 print("\t Best model saved", end='')
 
-        if config.save_interval > 0 and (metrics['epoch'] % config.save_interval == 0):
-            file_name = f"{config.model_name}_epoch{metrics['epoch']}.pt"
-            save_model(config, metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
+        if config.save_interval > 0 and (meter.metrics['epoch'] % config.save_interval == 0):
+            file_name = f"{config.model_name}_epoch{meter.metrics['epoch']}.pt"
+            save_model(config, meter.metrics['epoch'], model, loss_scaler, optimizer, log_folder, file_name)
             print("\t Intermediate model saved", end='')
         print("")
-
-    return history, best_loss
 
 
 def pretrain_train_main(config, device, log_folder=None):
@@ -246,6 +239,7 @@ def pretrain_train_main(config, device, log_folder=None):
     )
 
     num_epochs = config.epochs
+    lr_scheduler = None
     if config.scheduler:
         if verbose:
             print(f"    - Creating '{config.scheduler}' learning rate scheduler")
@@ -285,13 +279,15 @@ def pretrain_train_main(config, device, log_folder=None):
     if verbose:
         print("\n -> Executing training protocol")
         print(f"    - Training from epoch {start_epoch + 1} to epoch {num_epochs}\n")
-    history = None
-    best_loss = math.inf
-    start_time = time.time()
+
+    meter = None
+    if verbose:
+        meter = PretrainMeter(log_folder=log_folder)
+        meter.start_timer('total_training_time')
     for epoch in range(start_epoch, num_epochs):
         loader_train.sampler.set_epoch(epoch)
 
-        history, best_loss = train_one_epoch(
+        train_one_epoch(
             config=config,
             epoch=epoch,
             epochs=num_epochs,
@@ -302,22 +298,21 @@ def pretrain_train_main(config, device, log_folder=None):
             optimizer=optimizer,
             loss_scaler=loss_scaler,
             lr_scheduler=lr_scheduler if config.scheduler else None,
-            history=history,
-            best_loss=best_loss,
             log_folder=log_folder,
+            meter=meter,
         )
 
         if config.scheduler:
             lr_scheduler.step(epoch=epoch + 1)
 
     torch.distributed.barrier()
-    total_time = time.time() - start_time
-    total_time_str = str(datetime.timedelta(seconds=int(total_time)))
 
     if verbose:
+        meter.stop_timer('total_training_time')
+
         if not config.debug:
             print(f"\n    - Saving training history to {os.path.join(log_folder, 'history.csv')}")
-            history.to_csv(os.path.join(log_folder, 'history.csv'), index=False)
+            meter.history.to_csv(os.path.join(log_folder, 'history.csv'), index=False)
 
             if config.save_last:
                 file_name = f"{config.model_name}_last.pt"
@@ -326,7 +321,7 @@ def pretrain_train_main(config, device, log_folder=None):
 
             if config.use_wandb:
                 print("    - Saving assets to w&b")
-                wandb.summary['best_loss'] = best_loss
+                wandb.summary['best_loss'] = meter.best_loss
                 file_names = ['config.json', 'history.csv']
                 if config.save_best:
                     file_names.append(f'{config.model_name}_best.pt')
@@ -335,6 +330,6 @@ def pretrain_train_main(config, device, log_folder=None):
                 save_files_to_wandb(log_folder, file_names=file_names)
 
         print(f"\n -> Training summary")
-        print(f"    - Best loss: {best_loss :.3f}")
-        print(f"    - Total time: {total_time_str}")
+        print(f"    - Best loss: {meter.best_loss :.3f}")
+        print(f"    - Total time: {str(datetime.timedelta(seconds=int(meter.timers['total_training_time'])))}")
         print(f'\n -> Training protocol finished')

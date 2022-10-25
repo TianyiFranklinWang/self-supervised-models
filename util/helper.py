@@ -95,3 +95,9 @@ def get_state_dict(model, unwrap_fn=unwrap_model):
     else:
         dict = unwrapped_model.state_dict()
     return dict
+
+
+def get_lr(optimizer):
+    lrl = [param_group['lr'] for param_group in optimizer.param_groups]
+    lr = sum(lrl) / len(lrl)
+    return lr

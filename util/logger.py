@@ -1,13 +1,17 @@
 import copy
 import datetime
 import json
+import math
 import os
 import shutil
 import sys
+import time
 
 import pandas as pd
 import plotly.graph_objects as go
 import wandb
+
+from timm.utils import AverageMeter
 
 
 def prepare_log_folder(log_path):
@@ -117,48 +121,6 @@ def create_wandb_logger(config, log_folder, log_name):
     )
 
 
-def save_metrics(epoch, epochs, lr, epoch_time, avg_loss):
-    metrics = {
-        'epoch': epoch + 1,
-        'epochs': epochs,
-        'lr': lr,
-        'epoch_time': epoch_time,
-        'loss': avg_loss,
-    }
-    return metrics
-
-
-def update_history(history, metrics):
-    """
-    Updates a training history dataframe.
-
-    Args:
-        history (pandas dataframe or None): Previous history.
-        metrics (dict): Metrics dictionary.
-        epoch (int): Epoch.
-        loss (float): Training loss.
-        val_loss (float): Validation loss.
-        time (float): Epoch duration.
-
-    Returns:
-        pandas dataframe: history
-    """
-    new_history = {
-        "epoch": [metrics['epoch']],
-        "lr": [metrics['lr']],
-        "time": [metrics['epoch_time']],
-        "loss": [metrics['loss']],
-    }
-    new_history.update(metrics)
-
-    new_history = pd.DataFrame.from_dict(new_history)
-
-    if history is not None:
-        return pd.concat([history, new_history]).reset_index(drop=True)
-    else:
-        return new_history
-
-
 def save_files_to_wandb(log_folder, file_names):
     if not os.path.exists(os.path.join(wandb.run.dir, log_folder)):
         os.makedirs(os.path.join(wandb.run.dir, log_folder))
@@ -166,27 +128,80 @@ def save_files_to_wandb(log_folder, file_names):
         shutil.copy(os.path.join(log_folder, file_name), os.path.join(wandb.run.dir, log_folder, file_name))
 
 
-def plot_dashboard(df, x, y, title, log_folder):
-    fig = go.Figure()
-    fig.add_trace(
-        go.Scatter(
-            x=df[x],
-            y=df[y],
-            mode='lines',
+class PretrainMeter:
+    def __init__(self, log_folder=None):
+        self.timers = {}
+
+        self.best_loss = math.inf
+        self.metrics = None
+
+        self.history = None
+
+        self.log_folder = log_folder
+
+    def start_timer(self, timer_name):
+        self.timers[timer_name] = time.time()
+
+    def stop_timer(self, timer_name):
+        self.timers[timer_name] = time.time() - self.timers[timer_name]
+
+    def init_metrics(self, epoch, epochs):
+        self.metrics = {
+            'epoch': epoch + 1,
+            'epochs': epochs,
+            'avg_loss': AverageMeter(),
+        }
+
+    def update_metrics(self, lr, timer_name):
+        self.metrics['lr'] = lr
+        self.metrics['epoch_time'] = self.timers[timer_name]
+        self.metrics['avg_loss'] = self.metrics['avg_loss'].avg
+
+    def print_metrics(self):
+        print(
+            f"Epoch {self.metrics['epoch']:02d}/{self.metrics['epochs']:02d} \t"
+            f" lr={self.metrics['lr']:.1e}\t"
+            f" t={self.metrics['epoch_time']:.2f}s\t"
+            f" loss={self.metrics['avg_loss']:.3f}",
+            end=''
         )
-    )
-    fig.update_layout(
-        title_text=title,
-        title_x=0.5,
-        title_font_size=32,
-        autosize=False,
-        width=1920,
-        height=1080,
-        font=dict(
-            family="Times New Roman",
-            size=20,
+
+    def update_history(self):
+        new_history = {
+            "epoch": [self.metrics['epoch']],
+            "lr": [self.metrics['lr']],
+            "time": [self.metrics['epoch_time']],
+            "loss": [self.metrics['avg_loss']],
+        }
+
+        new_history = pd.DataFrame.from_dict(new_history)
+
+        if self.history is not None:
+            self.history = pd.concat([self.history, new_history]).reset_index(drop=True)
+        else:
+            self.history = new_history
+
+    def plot_dashboard(self, x, y, title):
+        fig = go.Figure()
+        fig.add_trace(
+            go.Scatter(
+                x=self.history[x],
+                y=self.history[y],
+                mode='lines',
+            )
         )
-    )
-    fig.update_xaxes(title_text=x)
-    fig.update_yaxes(title_text=y)
-    fig.write_image(os.path.join(log_folder, f"{title.replace(' ', '_')}.png"))
+        fig.update_layout(
+            title_text=title,
+            title_x=0.5,
+            title_font_size=32,
+            autosize=False,
+            width=1920,
+            height=1080,
+            font=dict(
+                family="Times New Roman",
+                size=20,
+            )
+        )
+        fig.update_xaxes(title_text=x)
+        fig.update_yaxes(title_text=y)
+        fig.write_image(os.path.join(self.log_folder, f"{title.replace(' ', '_')}.png"))
