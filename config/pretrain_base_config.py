@@ -14,6 +14,10 @@ class PretrainBaseConfig(ABC):
         self.dist_backend = 'nccl'
         self.dist_url = 'env://'
         self.ddp_find_unused_params = True
+        self.distributed = True
+        self.world_size = 1
+        self.rank = 0  # global rank
+        self.local_rank = 0
 
         self.debug = False
         self.log_path = "./logs"

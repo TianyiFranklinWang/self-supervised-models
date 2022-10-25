@@ -9,14 +9,14 @@ from functorch.compile import memory_efficient_fusion
 from torch.nn.parallel import DistributedDataParallel
 from torchvision import datasets
 
-import timm.utils
 from model import create_model
 from timm.models import model_parameters
 from timm.optim import create_optimizer_v2
 from timm.scheduler import create_scheduler_v2
-from timm.utils import NativeScaler, reduce_tensor
+from timm.utils import NativeScaler, reduce_tensor, set_jit_fuser
 from util.helper import count_parameters, get_lr, resume_checkpoint, save_model, seed_everything
 from util.logger import PretrainMeter, save_files_to_wandb
+from util.distributed import is_primary
 
 
 def train_one_epoch(
@@ -31,14 +31,10 @@ def train_one_epoch(
         loss_scaler,
         lr_scheduler,
         log_folder,
-        meter
+        meter,
 ):
-    rank = torch.distributed.get_rank()
-    world_size = torch.distributed.get_world_size()
-    verbose = (rank == 0)
-
     second_order = hasattr(optimizer, 'is_second_order') and optimizer.is_second_order
-    if verbose:
+    if is_primary(config):
         meter.init_metrics(epoch, epochs)
         meter.start_timer('current_epoch_time')
 
@@ -54,6 +50,8 @@ def train_one_epoch(
         loss_value = loss.item()
         if not math.isfinite(loss_value):
             raise RuntimeError(f"Loss is {loss_value}, training protocol aborted")
+        if not config.distributed:
+            meter.metrics['avg_loss'].update(loss_value, samples.size(0))
 
         optimizer.zero_grad()
         loss_scaler(
@@ -64,14 +62,19 @@ def train_one_epoch(
             parameters=model_parameters(model, exclude_head='agc' in config.clip_mode),
             create_graph=second_order
         )
-        if hasattr(model.module, 'update_moving_average'):
-            model.module.update_moving_average()
+        if config.distributed:
+            if hasattr(model.module, 'update_moving_average'):
+                model.module.update_moving_average()
+        else:
+            if hasattr(model, 'update_moving_average'):
+                model.update_moving_average()
 
         torch.cuda.synchronize()
 
-        reduced_loss = reduce_tensor(loss.data, world_size)
-        if verbose:
-            meter.metrics['avg_loss'].update(reduced_loss.item(), samples.size(0))
+        if config.distributed:
+            reduced_loss = reduce_tensor(loss.data, config.world_size)
+            if is_primary(config):
+                meter.metrics['avg_loss'].update(reduced_loss.item(), samples.size(0))
 
         num_updates += 1
         if lr_scheduler is not None:
@@ -80,8 +83,9 @@ def train_one_epoch(
     if hasattr(optimizer, 'sync_lookahead'):
         optimizer.sync_lookahead()
 
-    torch.distributed.barrier()
-    if verbose:
+    if config.distributed:
+        torch.distributed.barrier()
+    if is_primary(config):
         meter.stop_timer('current_epoch_time')
 
         lr = get_lr(optimizer)
@@ -118,24 +122,20 @@ def train_one_epoch(
 
 
 def pretrain_train_main(config, device, log_folder=None):
-    rank = torch.distributed.get_rank()
-    world_size = torch.distributed.get_world_size()
-    verbose = (rank == 0)
-
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.benchmark = True
 
-    if verbose:
+    if is_primary(config):
         print(f"    - Seeding everything with seed {config.global_seed}")
-    seed_everything(seed=config.global_seed, rank=rank)
+    seed_everything(seed=config.global_seed, rank=config.rank)
 
     if config.jit_fuser is not None and config.aot_autograd:
-        if verbose:
+        if is_primary(config):
             print(f"    - Setting jit fuser type to {config.jit_fuser}")
-        timm.utils.set_jit_fuser(config.jit_fuser)
+        set_jit_fuser(config.jit_fuser)
 
-    if verbose:
+    if is_primary(config):
         print(f'    - Creating model {config.model_name}')
     model = create_model(
         model_name=config.model_name,
@@ -143,35 +143,35 @@ def pretrain_train_main(config, device, log_folder=None):
         **config.model_kwargs
     ).to(device=device)
     model.zero_grad()
-    if verbose:
+    if is_primary(config):
         print(f"        - Image size: {config.image_size}")
         print(f"        - Custom model setting: {config.model_kwargs}")
         print(f"        - Total params: {count_parameters(model, only_trainable=False)}")
         print(f"        - Trainable params: {count_parameters(model, only_trainable=True)}")
 
     if config.aot_autograd:
-        if verbose:
+        if is_primary(config):
             print("        - Performing memory efficient fusion")
         model = memory_efficient_fusion(model)
 
     if config.lr is None:
-        if verbose:
+        if is_primary(config):
             print("    - Calculating learning rate")
-        global_batch_size = config.batch_size * world_size
+        global_batch_size = config.batch_size * config.world_size
         batch_ratio = global_batch_size / config.lr_base_size
         config.lr = config.lr_base * batch_ratio
-        if verbose:
+        if is_primary(config):
             print(f"        - Learning rate: {config.lr}")
             print(f"        - Base learning rate: {config.lr_base}")
             print(f"        - Local batch size: {config.batch_size}")
             print(f"        - Global batch_size: {global_batch_size}")
     else:
-        if verbose:
+        if is_primary(config):
             print("    - Setting learning rate")
             print(f"        - Learning rate: {config.lr}")
             print(f"        - Local batch size: {config.batch_size}")
 
-    if verbose:
+    if is_primary(config):
         print("    - Creating optimizer")
         print(f"        - Optimizer: {config.optimizer}")
         print(f"        - Learning rate: {config.lr}")
@@ -187,48 +187,50 @@ def pretrain_train_main(config, device, log_folder=None):
                                     **config.optimizer_kwargs
                                     )
 
-    if verbose:
+    if is_primary(config):
         print("    - Setting mixed precision training")
     amp_autocast = partial(torch.autocast, device_type=device.type, dtype=config.amp_dtype)
     loss_scaler = NativeScaler()
 
     resume_epoch = None
     if config.resume:
-        if verbose:
+        if is_primary(config):
             print(f"    - Resuming from checkpoint {config.resume}")
         resume_epoch = resume_checkpoint(
             model,
             config.resume,
             optimizer=None if config.no_resume_opt else optimizer,
             loss_scaler=None if config.no_resume_opt else loss_scaler,
-            verbose=verbose,
+            primary=is_primary(config),
         )
 
-    if verbose:
+    if is_primary(config):
         print("    - Initializing DistributedDataParallel training")
-    model = DistributedDataParallel(model,
-                                    device_ids=[device],
-                                    find_unused_parameters=config.ddp_find_unused_params)
+    if config.distributed:
+        model = DistributedDataParallel(model,
+                                        device_ids=[device],
+                                        find_unused_parameters=config.ddp_find_unused_params)
 
     if config.use_wandb and (not config.debug):
-        if verbose:
+        if is_primary(config):
             print(f"    - Enabling w&b tracing on {config.model_name} with frequency of {config.wandb_log_freq}")
             wandb.watch(model, log_freq=config.wandb_log_freq)
 
-    if verbose:
+    if is_primary(config):
         print("    - Creating training dataset")
     dataset_train = datasets.ImageFolder(os.path.join(config.data_path, config.train_folder_name),
                                          transform=config.dataset_transform_train)
-    if verbose:
+    if is_primary(config):
         print(f"        - Path to data root: {os.path.join(config.data_path, config.train_folder_name)}")
         print(f"        - Number of samples: {len(dataset_train)}")
         print(f"        - Transforms: {config.dataset_transform_train}")
 
-    if verbose:
-        print("    - Initializing data loader with distributed sampler")
-    sampler_train = torch.utils.data.DistributedSampler(
-        dataset_train, num_replicas=world_size, rank=rank, shuffle=True
-    )
+    if is_primary(config):
+        print("    - Initializing data loader")
+        print(f"        - Sampler: {'DistributedSampler' if config.distributed else 'None'}")
+    sampler_train = None
+    if config.distributed:
+        sampler_train = torch.utils.data.DistributedSampler(dataset_train)
     loader_train = torch.utils.data.DataLoader(
         dataset_train,
         batch_size=config.batch_size,
@@ -241,7 +243,7 @@ def pretrain_train_main(config, device, log_folder=None):
     num_epochs = config.epochs
     lr_scheduler = None
     if config.scheduler:
-        if verbose:
+        if is_primary(config):
             print(f"    - Creating '{config.scheduler}' learning rate scheduler")
         updates_per_epoch = len(loader_train)
         lr_scheduler, num_epochs = create_scheduler_v2(
@@ -276,16 +278,17 @@ def pretrain_train_main(config, device, log_folder=None):
         else:
             lr_scheduler.step(start_epoch)
 
-    if verbose:
+    if is_primary(config):
         print("\n -> Executing training protocol")
         print(f"    - Training from epoch {start_epoch + 1} to epoch {num_epochs}\n")
 
     meter = None
-    if verbose:
+    if is_primary(config):
         meter = PretrainMeter(log_folder=log_folder)
         meter.start_timer('total_training_time')
     for epoch in range(start_epoch, num_epochs):
-        loader_train.sampler.set_epoch(epoch)
+        if config.distributed:
+            loader_train.sampler.set_epoch(epoch)
 
         train_one_epoch(
             config=config,
@@ -305,9 +308,10 @@ def pretrain_train_main(config, device, log_folder=None):
         if config.scheduler:
             lr_scheduler.step(epoch=epoch + 1)
 
-    torch.distributed.barrier()
+    if config.distributed:
+        torch.distributed.barrier()
 
-    if verbose:
+    if is_primary(config):
         meter.stop_timer('total_training_time')
 
         if not config.debug:

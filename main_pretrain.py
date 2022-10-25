@@ -4,29 +4,32 @@ import torch
 
 import config
 from train import pretrain_train_main
-from util.distributed import cleanup_distributed, init_distributed_device
+from util.distributed import cleanup_distributed, init_distributed_device, is_primary
 from util.logger import create_logger, create_wandb_logger, prepare_log_folder, save_config
 
 CONFIG_NAME = "PretrainBYOLConfig"
-LOCAL_RANK = int(os.environ["LOCAL_RANK"])
+GLOBAL_RANK = int(os.environ["RANK"])
 WORLD_SIZE = int(os.environ['WORLD_SIZE'])
 
 if __name__ == '__main__':
-    if LOCAL_RANK == 0:
+    if GLOBAL_RANK == 0:
         print("\n -> Initializing training protocol")
 
-    if LOCAL_RANK == 0:
+    if GLOBAL_RANK == 0:
         print(f"    - Loading configuration from {CONFIG_NAME}")
-    config = config.get_config(CONFIG_NAME)
+    config = config.get_config(CONFIG_NAME, epochs=5, use_wandb=False)
 
-    if LOCAL_RANK == 0:
-        print(f"    - Initializing distributed process group with world size of {WORLD_SIZE}")
-    device = init_distributed_device(config, rank=LOCAL_RANK, world_size=WORLD_SIZE)
-    print(f"        - Initialized on rank{LOCAL_RANK}")
-    torch.distributed.barrier()
+    if GLOBAL_RANK == 0:
+        print(f"    - Initializing process group with world size of {WORLD_SIZE}")
+    device = init_distributed_device(config)
+    print(f"        - Initialized on rank{config.local_rank}")
+    assert config.rank >= 0
+
+    if config.distributed:
+        torch.distributed.barrier()
 
     log_folder = None
-    if LOCAL_RANK == 0:
+    if is_primary(config):
         if not config.debug:
             print("    - Initializing logging system")
             log_folder, log_name = prepare_log_folder(config.log_path)
@@ -39,5 +42,6 @@ if __name__ == '__main__':
 
     pretrain_train_main(config, device=device, log_folder=log_folder)
 
-    torch.distributed.barrier()
-    cleanup_distributed()
+    if config.distributed:
+        torch.distributed.barrier()
+        cleanup_distributed()
