@@ -157,7 +157,7 @@ class PretrainMeter:
         self.metrics['epoch_time'] = self.timers[timer_name]
         self.metrics['avg_loss'] = self.metrics['avg_loss'].avg
 
-    def print_metrics(self):
+    def report_metrics(self):
         print(
             f"Epoch {self.metrics['epoch']:02d}/{self.metrics['epochs']:02d} \t"
             f" lr={self.metrics['lr']:.1e}\t"
