@@ -17,12 +17,13 @@ if __name__ == '__main__':
 
     if GLOBAL_RANK == 0:
         print(f"    - Loading configuration from {CONFIG_NAME}")
-    config = config.get_config(CONFIG_NAME, epochs=5, use_wandb=False)
+    config = config.get_config(CONFIG_NAME, log_level='user')
 
     if GLOBAL_RANK == 0:
         print(f"    - Initializing process group with world size of {WORLD_SIZE}")
     device = init_distributed_device(config)
-    print(f"        - Initialized on rank{config.local_rank}")
+    if config.log_level == 'debug':
+        print(f"        - Initialized on rank{config.local_rank}")
     assert config.rank >= 0
 
     if config.distributed:
@@ -33,11 +34,13 @@ if __name__ == '__main__':
         if not config.debug:
             print("    - Initializing logging system")
             log_folder, log_name = prepare_log_folder(config.log_path)
-            print(f"        - Logging results to {log_folder}")
+            if config.log_level == 'debug':
+                print(f"        - Logging results to {log_folder}")
             config_dict = save_config(config, log_folder)
             create_logger(directory=log_folder, name='logs.txt')
             if config.use_wandb:
-                print("        - Enabling w&b logging system")
+                if config.log_level == 'debug':
+                    print("        - Enabling w&b logging system")
                 create_wandb_logger(config, log_folder, log_name)
 
     pretrain_train_main(config, device=device, log_folder=log_folder)

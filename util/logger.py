@@ -108,8 +108,9 @@ def create_logger(directory="", name="logs.txt"):
 
 
 def create_wandb_logger(config, log_folder, log_name):
-    print(f"            - w&b project name: {config.wandb_project_name}")
-    print(f"            - w&b experiment name: {config.wandb_exp_name}_{log_name}")
+    if config.log_level == 'debug':
+        print(f"            - w&b project name: {config.wandb_project_name}")
+        print(f"            - w&b experiment name: {config.wandb_exp_name}_{log_name}")
 
     wandb.init(
         project=config.wandb_project_name,
