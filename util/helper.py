@@ -17,7 +17,7 @@ def seed_everything(seed=42, rank=0):
     os.environ["PYTHONHASHSEED"] = str(seed)
 
 
-def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, primary=False):
+def resume_checkpoint(config, model, checkpoint_path, optimizer=None, loss_scaler=None, primary=False):
     resume_epoch = None
     if os.path.isfile(checkpoint_path):
         checkpoint = torch.load(checkpoint_path, map_location='cpu')
@@ -27,28 +27,28 @@ def resume_checkpoint(model, checkpoint_path, optimizer=None, loss_scaler=None, 
                 model.net.load_state_dict(state_dict)
             else:
                 model.load_state_dict(state_dict)
-            if primary:
+            if primary and config.log_level == 'debug':
                 print("        - Checkpoint loaded")
 
             if optimizer is not None and 'optimizer' in checkpoint:
                 optimizer.load_state_dict(checkpoint['optimizer'])
-                if primary:
+                if primary and config.log_level == 'debug':
                     print("        - Optimizer state restored")
 
             if loss_scaler is not None and loss_scaler.state_dict_key in checkpoint:
                 loss_scaler.load_state_dict(checkpoint[loss_scaler.state_dict_key])
-                if primary:
+                if primary and config.log_level == 'debug':
                     print("        - Loss scaler state restored")
             if 'epoch' in checkpoint:
                 resume_epoch = checkpoint['epoch']
-                if primary:
+                if primary and config.log_level == 'debug':
                     print(f"        - Training restored from epoch {resume_epoch}")
         else:
             if hasattr(model, 'net'):
                 model.net.load_state_dict(checkpoint)
             else:
                 model.load_state_dict(checkpoint)
-            if primary:
+            if primary and config.log_level == 'debug':
                 print("        - Checkpoint loaded")
         return resume_epoch
     else:

@@ -21,6 +21,7 @@ class PretrainBaseConfig(ABC):
 
         self.debug = False
         self.log_path = "./logs"
+        self.log_level = 'debug'
         self.save_last = True
         self.save_best = False
         self.save_interval = 50

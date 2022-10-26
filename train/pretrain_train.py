@@ -143,14 +143,14 @@ def pretrain_train_main(config, device, log_folder=None):
         **config.model_kwargs
     ).to(device=device)
     model.zero_grad()
-    if is_primary(config):
+    if is_primary(config) and config.log_level == 'debug':
         print(f"        - Image size: {config.image_size}")
         print(f"        - Custom model setting: {config.model_kwargs}")
         print(f"        - Total params: {count_parameters(model, only_trainable=False)}")
         print(f"        - Trainable params: {count_parameters(model, only_trainable=True)}")
 
     if config.aot_autograd:
-        if is_primary(config):
+        if is_primary(config) and config.log_level == 'debug':
             print("        - Performing memory efficient fusion")
         model = memory_efficient_fusion(model)
 
@@ -160,7 +160,7 @@ def pretrain_train_main(config, device, log_folder=None):
         global_batch_size = config.batch_size * config.world_size
         batch_ratio = global_batch_size / config.lr_base_size
         config.lr = config.lr_base * batch_ratio
-        if is_primary(config):
+        if is_primary(config) and config.log_level == 'debug':
             print(f"        - Learning rate: {config.lr}")
             print(f"        - Base learning rate: {config.lr_base}")
             print(f"        - Local batch size: {config.batch_size}")
@@ -168,16 +168,18 @@ def pretrain_train_main(config, device, log_folder=None):
     else:
         if is_primary(config):
             print("    - Setting learning rate")
-            print(f"        - Learning rate: {config.lr}")
-            print(f"        - Local batch size: {config.batch_size}")
+            if config.log_level == 'debug':
+                print(f"        - Learning rate: {config.lr}")
+                print(f"        - Local batch size: {config.batch_size}")
 
     if is_primary(config):
         print("    - Creating optimizer")
-        print(f"        - Optimizer: {config.optimizer}")
-        print(f"        - Learning rate: {config.lr}")
-        print(f"        - Weight decay: {config.weight_decay}")
-        print(f"        - Layer decay: {config.layer_decay}")
-        print(f"        - Custom optimizer setting: {config.optimizer_kwargs}")
+        if config.log_level == 'debug':
+            print(f"        - Optimizer: {config.optimizer}")
+            print(f"        - Learning rate: {config.lr}")
+            print(f"        - Weight decay: {config.weight_decay}")
+            print(f"        - Layer decay: {config.layer_decay}")
+            print(f"        - Custom optimizer setting: {config.optimizer_kwargs}")
     optimizer = create_optimizer_v2(model,
                                     opt=config.optimizer,
                                     lr=config.lr,
@@ -197,6 +199,7 @@ def pretrain_train_main(config, device, log_folder=None):
         if is_primary(config):
             print(f"    - Resuming from checkpoint {config.resume}")
         resume_epoch = resume_checkpoint(
+            config,
             model,
             config.resume,
             optimizer=None if config.no_resume_opt else optimizer,
@@ -213,21 +216,24 @@ def pretrain_train_main(config, device, log_folder=None):
 
     if config.use_wandb and (not config.debug):
         if is_primary(config):
-            print(f"    - Enabling w&b tracing on {config.model_name} with frequency of {config.wandb_log_freq}")
+            print(f"    - Enabling w&b tracing on {config.model_name}")
+            if config.log_level == 'debug':
+                print(f"        - Frequency: {config.wandb_log_freq}")
             wandb.watch(model, log_freq=config.wandb_log_freq)
 
     if is_primary(config):
         print("    - Creating training dataset")
     dataset_train = datasets.ImageFolder(os.path.join(config.data_path, config.train_folder_name),
                                          transform=config.dataset_transform_train)
-    if is_primary(config):
+    if is_primary(config) and config.log_level == 'debug':
         print(f"        - Path to data root: {os.path.join(config.data_path, config.train_folder_name)}")
         print(f"        - Number of samples: {len(dataset_train)}")
         print(f"        - Transforms: {config.dataset_transform_train}")
 
     if is_primary(config):
         print("    - Initializing data loader")
-        print(f"        - Sampler: {'DistributedSampler' if config.distributed else 'None'}")
+        if config.log_level == 'debug':
+            print(f"        - Sampler: {'DistributedSampler' if config.distributed else 'None'}")
     sampler_train = None
     if config.distributed:
         sampler_train = torch.utils.data.DistributedSampler(dataset_train)
@@ -243,11 +249,9 @@ def pretrain_train_main(config, device, log_folder=None):
     num_epochs = config.epochs
     lr_scheduler = None
     if config.scheduler:
-        if is_primary(config):
-            print(f"    - Creating '{config.scheduler}' learning rate scheduler")
+
         updates_per_epoch = len(loader_train)
-        lr_scheduler, num_epochs = create_scheduler_v2(
-            optimizer,
+        lr_scheduler_config_dict = dict(
             sched=config.scheduler,
             num_epochs=config.epochs,
             decay_epochs=config.decay_epochs,
@@ -269,6 +273,17 @@ def pretrain_train_main(config, device, log_folder=None):
             updates_per_epoch=updates_per_epoch,
         )
 
+        if is_primary(config):
+            print(f"    - Creating '{config.scheduler}' learning rate scheduler")
+            if config.log_level == 'debug':
+                for key, val in lr_scheduler_config_dict.items():
+                    print(f"        - {key.replace('_', ' ').capitalize()}: {val}")
+
+        lr_scheduler, num_epochs = create_scheduler_v2(
+            optimizer,
+            **lr_scheduler_config_dict,
+        )
+
     start_epoch = 0
     if resume_epoch is not None:
         start_epoch = resume_epoch
@@ -280,7 +295,7 @@ def pretrain_train_main(config, device, log_folder=None):
 
     if is_primary(config):
         print("\n -> Executing training protocol")
-        print(f"    - Training from epoch {start_epoch + 1} to epoch {num_epochs}\n")
+        print(f"    - Training from epoch {start_epoch + 1} to {num_epochs}\n")
 
     meter = None
     if is_primary(config):
