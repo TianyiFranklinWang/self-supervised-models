@@ -92,7 +92,7 @@ def train_one_epoch(
         meter.update_metrics(lr, 'current_epoch_time')
 
         print("    - ", end='')
-        meter.print_metrics()
+        meter.report_metrics()
 
         meter.update_history()
 
