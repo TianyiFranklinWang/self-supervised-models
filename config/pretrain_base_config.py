@@ -35,6 +35,7 @@ class PretrainBaseConfig(ABC):
         self.jit_fuser = 'nvfuser'
         self.model_name = None
         self.image_size = 224
+        self.sync_bn = True
         self.aot_autograd = False
         self.resume = None
         self.no_resume_opt = False
