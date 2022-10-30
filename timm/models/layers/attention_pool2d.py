@@ -7,13 +7,13 @@ https://github.com/openai/CLIP/blob/3b473b0e682c091a9e53623eebc1ca1657385717/cli
 
 Hacked together by / Copyright 2021 Ross Wightman
 """
-from typing import Tuple, Union
+from typing import Union, Tuple
 
 import torch
 import torch.nn as nn
 
 from .helpers import to_2tuple
-from .pos_embed import RotaryEmbedding, apply_rot_embed
+from .pos_embed import apply_rot_embed, RotaryEmbedding
 from .weight_init import trunc_normal_
 
 
@@ -27,7 +27,6 @@ class RotAttentionPool2d(nn.Module):
     NOTE: While this impl does not require a fixed feature size, performance at differeing resolutions from
     train varies widely and falls off dramatically. I'm not sure if there is a way around this... -RW
     """
-
     def __init__(
             self,
             in_features: int,
@@ -86,7 +85,6 @@ class AttentionPool2d(nn.Module):
 
     NOTE: This requires feature size upon construction and well prevent adaptive sizing of the network.
     """
-
     def __init__(
             self,
             in_features: int,

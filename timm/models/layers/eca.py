@@ -34,9 +34,9 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 import math
-
-import torch.nn.functional as F
 from torch import nn
+import torch.nn.functional as F
+
 
 from .create_act import create_act_layer
 from .helpers import make_divisible
@@ -57,10 +57,9 @@ class EcaModule(nn.Module):
         act_layer: optional non-linearity after conv, enables conv bias, this is an experiment
         gate_layer: gating non-linearity to use
     """
-
     def __init__(
             self, channels=None, kernel_size=3, gamma=2, beta=1, act_layer=None, gate_layer='sigmoid',
-            rd_ratio=1 / 8, rd_channels=None, rd_divisor=8, use_mlp=False):
+            rd_ratio=1/8, rd_channels=None, rd_divisor=8, use_mlp=False):
         super(EcaModule, self).__init__()
         if channels is not None:
             t = int(abs(math.log(channels, 2) + beta) / gamma)

@@ -4,8 +4,8 @@ Create norm modules by string (to mirror create_act and creat_norm-act fns)
 
 Copyright 2022 Ross Wightman
 """
-import functools
 import types
+import functools
 
 import torch.nn as nn
 
@@ -30,7 +30,7 @@ def create_norm_layer(layer_name, num_features, act_layer=None, apply_act=True, 
 
 
 def get_norm_layer(norm_layer):
-    assert isinstance(norm_layer, (type, str, types.FunctionType, functools.partial))
+    assert isinstance(norm_layer, (type, str,  types.FunctionType, functools.partial))
     norm_kwargs = {}
 
     # unbind partial fn, so args can be rebound later

@@ -6,10 +6,11 @@ Hacked together by / Copyright 2021 Ross Wightman
 """
 import logging
 import math
-
+import numpy as np
 import torch
 
 from .scheduler import Scheduler
+
 
 _logger = logging.getLogger(__name__)
 

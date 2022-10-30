@@ -19,7 +19,7 @@ import torch.nn as nn
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .helpers import build_model_with_cfg
-from .layers import DropPath, Mlp, to_2tuple, trunc_normal_
+from .layers import DropPath, trunc_normal_, to_2tuple, Mlp
 from .registry import register_model
 
 
@@ -307,7 +307,7 @@ class EfficientFormerStage(nn.Module):
             drop=.0,
             drop_path=0.,
             layer_scale_init_value=1e-5,
-    ):
+):
         super().__init__()
         self.grad_checkpointing = False
 
@@ -548,3 +548,4 @@ def efficientformer_l7(pretrained=False, **kwargs):
         num_vit=8,
         **kwargs)
     return _create_efficientformer('efficientformer_l7', pretrained=pretrained, **model_kwargs)
+

@@ -8,14 +8,13 @@ Hacked together by / Copyright 2020 Ross Wightman
 
 import math
 from functools import partial
-
 import numpy as np
 import torch
 from torch import nn as nn
 from torch.nn import functional as F
 
-from .conv2d_same import conv2d_same
 from .helpers import to_2tuple
+from .conv2d_same import conv2d_same
 from .padding import get_padding_value
 
 
@@ -29,7 +28,6 @@ def get_condconv_initializer(initializer, num_experts, expert_shape):
                 'CondConv variables must have shape [num_experts, num_params]'))
         for i in range(num_experts):
             initializer(weight[i].view(expert_shape))
-
     return condconv_initializer
 
 

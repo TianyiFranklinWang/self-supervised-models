@@ -83,7 +83,6 @@ class set_layer_config:
     """ Layer config context manager that allows setting all layer config flags at once.
     If a flag arg is None, it will not change the current value.
     """
-
     def __init__(
             self,
             scriptable: Optional[bool] = None,

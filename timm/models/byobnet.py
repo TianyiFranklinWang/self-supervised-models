@@ -26,16 +26,17 @@ Hacked together by / copyright Ross Wightman, 2021.
 """
 import math
 from dataclasses import dataclass, field, replace
+from typing import Tuple, List, Dict, Optional, Union, Any, Callable, Sequence
 from functools import partial
-from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple, Union
 
 import torch
 import torch.nn as nn
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import build_model_with_cfg, checkpoint_seq, named_apply
-from .layers import AvgPool2dSame, BatchNormAct2d, ClassifierHead, ConvNormAct, DropPath, EvoNorm2dS0a, create_conv2d, \
-    get_act_layer, get_attn, get_norm_act_layer, make_divisible, to_2tuple
+from .helpers import build_model_with_cfg, named_apply, checkpoint_seq
+from .layers import ClassifierHead, ConvNormAct, BatchNormAct2d, DropPath, AvgPool2dSame, \
+    create_conv2d, get_act_layer, get_norm_act_layer, get_attn, make_divisible, to_2tuple, EvoNorm2dS0, EvoNorm2dS0a,\
+    EvoNorm2dS1, EvoNorm2dS1a, EvoNorm2dS2, EvoNorm2dS2a, FilterResponseNormAct2d, FilterResponseNormTlu2d
 from .registry import register_model
 
 __all__ = ['ByobNet', 'ByoModelCfg', 'ByoBlockCfg', 'create_byob_stem', 'create_block']
@@ -139,12 +140,10 @@ default_cfgs = {
     'regnetz_b16': _cfgr(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-attn-weights/regnetz_b_raa-677d9606.pth',
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5),
-        input_size=(3, 224, 224), pool_size=(7, 7), test_input_size=(3, 288, 288), first_conv='stem.conv',
-        crop_pct=0.94),
+        input_size=(3, 224, 224), pool_size=(7, 7), test_input_size=(3, 288, 288), first_conv='stem.conv', crop_pct=0.94),
     'regnetz_c16': _cfgr(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-attn-weights/regnetz_c_rab2_256-a54bf36a.pth',
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), first_conv='stem.conv',
-        crop_pct=0.94),
+        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), first_conv='stem.conv', crop_pct=0.94),
     'regnetz_d32': _cfgr(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-attn-weights/regnetz_d_rab_256-b8073a89.pth',
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), crop_pct=0.95),
@@ -162,8 +161,7 @@ default_cfgs = {
         crop_pct=0.94),
     'regnetz_c16_evos': _cfgr(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tpu-weights/regnetz_c16_evos_ch-d8311942.pth',
-        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), first_conv='stem.conv',
-        crop_pct=0.95),
+        mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), first_conv='stem.conv', crop_pct=0.95),
     'regnetz_d8_evos': _cfgr(
         url='https://github.com/rwightman/pytorch-image-models/releases/download/v0.1-tpu-weights/regnetz_d8_evos_ch-2bc12646.pth',
         mean=(0.5, 0.5, 0.5), std=(0.5, 0.5, 0.5), test_input_size=(3, 320, 320), crop_pct=0.95),
@@ -659,7 +657,6 @@ model_cfgs = dict(
         block_kwargs=dict(bottle_in=True, linear_out=True),
     ),
 )
-
 
 @register_model
 def gernet_l(pretrained=False, **kwargs):
@@ -1253,7 +1250,6 @@ class SelfAttnBlock(nn.Module):
             x = x + self.shortcut(shortcut)
         return self.act(x)
 
-
 _block_registry = dict(
     basic=BasicBlock,
     bottle=BottleneckBlock,
@@ -1264,7 +1260,7 @@ _block_registry = dict(
 )
 
 
-def register_block(block_type: str, block_fn: nn.Module):
+def register_block(block_type:str, block_fn: nn.Module):
     _block_registry[block_type] = block_fn
 
 
@@ -1415,6 +1411,7 @@ def create_byob_stages(
         feat_size: Optional[int] = None,
         layers: Optional[LayerFn] = None,
         block_kwargs_fn: Optional[Callable] = update_block_kwargs):
+
     layers = layers or LayerFn()
     feature_info = []
     block_cfgs = [expand_blocks_cfg(s) for s in cfg.blocks]
@@ -1487,7 +1484,6 @@ class ByobNet(nn.Module):
 
     Current assumption is that both stem and blocks are in conv-bn-act order (w/ block ending in act).
     """
-
     def __init__(
             self, cfg: ByoModelCfg, num_classes=1000, in_chans=3, global_pool='avg', output_stride=32,
             zero_init_last=True, img_size=None, drop_rate=0., drop_path_rate=0.):

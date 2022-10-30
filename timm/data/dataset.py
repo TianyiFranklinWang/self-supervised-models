@@ -2,6 +2,7 @@
 
 Hacked together by / Copyright 2019, Ross Wightman
 """
+import io
 import logging
 from typing import Optional
 
@@ -12,6 +13,7 @@ from PIL import Image
 from .readers import create_reader
 
 _logger = logging.getLogger(__name__)
+
 
 _ERROR_RETRY = 50
 

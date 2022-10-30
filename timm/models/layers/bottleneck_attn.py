@@ -20,9 +20,9 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from .helpers import make_divisible, to_2tuple
-from .trace_utils import _assert
+from .helpers import to_2tuple, make_divisible
 from .weight_init import trunc_normal_
+from .trace_utils import _assert
 
 
 def rel_logits_1d(q, rel_k, permute_mask: List[int]):
@@ -38,7 +38,7 @@ def rel_logits_1d(q, rel_k, permute_mask: List[int]):
     """
     B, H, W, dim = q.shape
     x = (q @ rel_k.transpose(-1, -2))
-    x = x.reshape(-1, W, 2 * W - 1)
+    x = x.reshape(-1, W, 2 * W -1)
 
     # pad to shift from relative to absolute indexing
     x_pad = F.pad(x, [0, 1]).flatten(1)
@@ -58,7 +58,6 @@ class PosEmbedRel(nn.Module):
     As per: https://gist.github.com/aravindsrinivas/56359b79f0ce4449bcb04ab4b56a57a2
     Originally from: `Attention Augmented Convolutional Networks` - https://arxiv.org/abs/1904.09925
     """
-
     def __init__(self, feat_size, dim_head, scale):
         super().__init__()
         self.height, self.width = to_2tuple(feat_size)
@@ -104,7 +103,6 @@ class BottleneckAttn(nn.Module):
         qkv_bias (bool): add bias to q, k, and v projections
         scale_pos_embed (bool): scale the position embedding as well as Q @ K
     """
-
     def __init__(
             self, dim, dim_out=None, feat_size=None, stride=1, num_heads=4, dim_head=None,
             qk_ratio=1.0, qkv_bias=False, scale_pos_embed=False):
