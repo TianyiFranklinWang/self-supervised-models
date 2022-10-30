@@ -149,6 +149,11 @@ def pretrain_train_main(config, device, log_folder=None):
         print(f"        - Total params: {count_parameters(model, only_trainable=False)}")
         print(f"        - Trainable params: {count_parameters(model, only_trainable=True)}")
 
+    if config.distributed and config.sync_bn:
+        if is_primary(config) and config.log_level == 'debug':
+            print("        - Convert BatchNorm to SyncBatchNorm")
+        model = torch.nn.SyncBatchNorm.convert_sync_batchnorm(model)
+
     if config.aot_autograd:
         if is_primary(config) and config.log_level == 'debug':
             print("        - Performing memory efficient fusion")
