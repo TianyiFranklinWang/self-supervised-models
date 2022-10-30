@@ -20,3 +20,4 @@ def dispatch_clip_grad(parameters, value: float, mode: str = 'norm', norm_type: 
         adaptive_clip_grad(parameters, value, norm_type=norm_type)
     else:
         assert False, f"Unknown clip mode ({mode})."
+

@@ -1,12 +1,12 @@
 """ Activation Factory
 Hacked together by / Copyright 2020 Ross Wightman
 """
-from typing import Callable, Type, Union
+from typing import Union, Callable, Type
 
 from .activations import *
 from .activations_jit import *
 from .activations_me import *
-from .config import is_exportable, is_no_jit, is_scriptable
+from .config import is_exportable, is_scriptable, is_no_jit
 
 # PyTorch has an optimized, native 'silu' (aka 'swish') operator as of PyTorch 1.7.
 # Also hardsigmoid, hardswish, and soon mish. This code will use native version if present.
@@ -15,6 +15,7 @@ _has_silu = 'silu' in dir(torch.nn.functional)
 _has_hardswish = 'hardswish' in dir(torch.nn.functional)
 _has_hardsigmoid = 'hardsigmoid' in dir(torch.nn.functional)
 _has_mish = 'mish' in dir(torch.nn.functional)
+
 
 _ACT_FN_DEFAULT = dict(
     silu=F.silu if _has_silu else swish,
@@ -56,6 +57,7 @@ _ACT_FNS = (_ACT_FN_ME, _ACT_FN_JIT, _ACT_FN_DEFAULT)
 for a in _ACT_FNS:
     a.setdefault('hardsigmoid', a.get('hard_sigmoid'))
     a.setdefault('hardswish', a.get('hard_swish'))
+
 
 _ACT_LAYER_DEFAULT = dict(
     silu=nn.SiLU if _has_silu else Swish,

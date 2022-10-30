@@ -6,11 +6,10 @@ BlurPool layer inspired by
 Hacked together by Chris Ha and Ross Wightman
 """
 
-import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-
+import numpy as np
 from .padding import get_padding
 
 
@@ -27,7 +26,6 @@ class BlurPool2d(nn.Module):
     Returns:
         torch.Tensor: the transformed tensor.
     """
-
     def __init__(self, channels, filt_size=3, stride=2) -> None:
         super(BlurPool2d, self).__init__()
         assert filt_size > 1

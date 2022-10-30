@@ -1,5 +1,4 @@
 import math
-
 import torch
 from torch.optim.optimizer import Optimizer
 
@@ -127,7 +126,7 @@ class AdaBelief(Optimizer):
                     if amsgrad:
                         # Maintains max of all exp. moving avg. of sq. grad. values
                         state['max_exp_avg_var'] = torch.zeros_like(p_fp32)
-
+                
                 # perform weight decay, check if decoupled weight decay
                 if group['decoupled_decay']:
                     if not group['fixed_decay']:
@@ -159,7 +158,7 @@ class AdaBelief(Optimizer):
                     denom = (max_exp_avg_var.sqrt() / math.sqrt(bias_correction2)).add_(group['eps'])
                 else:
                     denom = (exp_avg_var.add_(group['eps']).sqrt() / math.sqrt(bias_correction2)).add_(group['eps'])
-
+                
                 # update
                 if not group['rectify']:
                     # Default update
@@ -195,7 +194,7 @@ class AdaBelief(Optimizer):
                         p_fp32.addcdiv_(exp_avg, denom, value=-step_size * group['lr'])
                     elif step_size > 0:
                         p_fp32.add_(exp_avg, alpha=-step_size * group['lr'])
-
+                
                 if p.dtype in {torch.float16, torch.bfloat16}:
                     p.copy_(p_fp32)
 

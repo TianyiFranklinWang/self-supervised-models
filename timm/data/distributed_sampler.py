@@ -1,8 +1,7 @@
 import math
-
 import torch
-import torch.distributed as dist
 from torch.utils.data import Sampler
+import torch.distributed as dist
 
 
 class OrderedDistributedSampler(Sampler):
@@ -95,7 +94,7 @@ class RepeatAugSampler(Sampler):
         selected_ratio = selected_ratio or num_replicas  # ratio to reduce selected samples by, num_replicas if 0
         if selected_round:
             self.num_selected_samples = int(math.floor(
-                len(self.dataset) // selected_round * selected_round / selected_ratio))
+                 len(self.dataset) // selected_round * selected_round / selected_ratio))
         else:
             self.num_selected_samples = int(math.ceil(len(self.dataset) / selected_ratio))
 

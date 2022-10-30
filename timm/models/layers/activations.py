@@ -36,7 +36,6 @@ def mish(x, inplace: bool = False):
 class Mish(nn.Module):
     """Mish: A Self Regularized Non-Monotonic Neural Activation Function - https://arxiv.org/abs/1908.08681
     """
-
     def __init__(self, inplace: bool = False):
         super(Mish, self).__init__()
 
@@ -125,7 +124,6 @@ class HardMish(nn.Module):
 class PReLU(nn.PReLU):
     """Applies PReLU (w/ dummy inplace arg)
     """
-
     def __init__(self, num_parameters: int = 1, init: float = 0.25, inplace: bool = False) -> None:
         super(PReLU, self).__init__(num_parameters=num_parameters, init=init)
 
@@ -140,7 +138,6 @@ def gelu(x: torch.Tensor, inplace: bool = False) -> torch.Tensor:
 class GELU(nn.Module):
     """Applies the Gaussian Error Linear Units function (w/ dummy inplace arg)
     """
-
     def __init__(self, inplace: bool = False):
         super(GELU, self).__init__()
 

@@ -6,7 +6,6 @@ import torch
 
 try:
     from apex import amp
-
     has_apex = True
 except ImportError:
     amp = None

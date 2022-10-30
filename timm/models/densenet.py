@@ -4,6 +4,7 @@ fixed kwargs passthrough and addition of dynamic global avg/max pool.
 """
 import re
 from collections import OrderedDict
+from functools import partial
 
 import torch
 import torch.nn as nn
@@ -12,8 +13,8 @@ import torch.utils.checkpoint as cp
 from torch.jit.annotations import List
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
-from .helpers import MATCH_PREV_GROUP, build_model_with_cfg
-from .layers import BatchNormAct2d, BlurPool2d, create_classifier, create_norm_act_layer
+from .helpers import build_model_with_cfg, MATCH_PREV_GROUP
+from .layers import BatchNormAct2d, create_norm_act_layer, BlurPool2d, create_classifier
 from .registry import register_model
 
 __all__ = ['DenseNet']
@@ -381,10 +382,8 @@ def densenet264(pretrained=False, **kwargs):
 def densenet264d_iabn(pretrained=False, **kwargs):
     r"""Densenet-264 model with deep stem and Inplace-ABN
     """
-
     def norm_act_fn(num_features, **kwargs):
         return create_norm_act_layer('iabn', num_features, act_layer='leaky_relu', **kwargs)
-
     model = _create_densenet(
         'densenet264d_iabn', growth_rate=48, block_config=(6, 12, 64, 48), stem_type='deep',
         norm_layer=norm_act_fn, pretrained=pretrained, **kwargs)

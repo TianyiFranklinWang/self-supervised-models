@@ -6,13 +6,13 @@ combined modules like IABN or EvoNorms.
 
 Hacked together by / Copyright 2020 Ross Wightman
 """
-import functools
 import types
+import functools
 
 from .evo_norm import *
 from .filter_response_norm import FilterResponseNormAct2d, FilterResponseNormTlu2d
-from .inplace_abn import InplaceAbn
 from .norm_act import BatchNormAct2d, GroupNormAct, LayerNormAct, LayerNormAct2d
+from .inplace_abn import InplaceAbn
 
 _NORM_ACT_MAP = dict(
     batchnorm=BatchNormAct2d,
@@ -50,7 +50,7 @@ def create_norm_act_layer(layer_name, num_features, act_layer=None, apply_act=Tr
 
 
 def get_norm_act_layer(norm_layer, act_layer=None):
-    assert isinstance(norm_layer, (type, str, types.FunctionType, functools.partial))
+    assert isinstance(norm_layer, (type, str,  types.FunctionType, functools.partial))
     assert act_layer is None or isinstance(act_layer, (type, str, types.FunctionType, functools.partial))
     norm_act_kwargs = {}
 
@@ -64,7 +64,7 @@ def get_norm_act_layer(norm_layer, act_layer=None):
         norm_act_layer = _NORM_ACT_MAP.get(layer_name, None)
     elif norm_layer in _NORM_ACT_TYPES:
         norm_act_layer = norm_layer
-    elif isinstance(norm_layer, types.FunctionType):
+    elif isinstance(norm_layer,  types.FunctionType):
         # if function type, must be a lambda/fn that creates a norm_act layer
         norm_act_layer = norm_layer
     else:

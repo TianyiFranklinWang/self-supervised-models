@@ -11,7 +11,7 @@ from .adaptive_avgmax_pool import SelectAdaptivePool2d
 def _create_pool(num_features, num_classes, pool_type='avg', use_conv=False):
     flatten_in_pool = not use_conv  # flatten when we use a Linear layer after pooling
     if not pool_type:
-        assert num_classes == 0 or use_conv, \
+        assert num_classes == 0 or use_conv,\
             'Pooling can only be disabled if classifier is also removed or conv classifier is used'
         flatten_in_pool = False  # disable flattening if pooling is pass-through (no pooling)
     global_pool = SelectAdaptivePool2d(pool_type=pool_type, flatten=flatten_in_pool)

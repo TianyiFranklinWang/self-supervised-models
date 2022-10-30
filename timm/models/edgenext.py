@@ -8,19 +8,20 @@ Original code and weights from https://github.com/mmaaz60/EdgeNeXt
 Modifications and additions for timm by / Copyright 2022, Ross Wightman
 """
 import math
+import torch
 from collections import OrderedDict
 from functools import partial
 from typing import Tuple
 
-import torch
-import torch.nn.functional as F
 from torch import nn
+import torch.nn.functional as F
 
 from timm.data import IMAGENET_DEFAULT_MEAN, IMAGENET_DEFAULT_STD
 from .fx_features import register_notrace_module
-from .helpers import build_model_with_cfg, checkpoint_seq, named_apply
-from .layers import DropPath, LayerNorm2d, Mlp, SelectAdaptivePool2d, create_conv2d, trunc_normal_tf_
+from .layers import trunc_normal_tf_, DropPath, LayerNorm2d, Mlp, SelectAdaptivePool2d, create_conv2d
+from .helpers import named_apply, build_model_with_cfg, checkpoint_seq
 from .registry import register_model
+
 
 __all__ = ['EdgeNeXt']  # model_registry will add each entrypoint fn to this
 
@@ -411,11 +412,11 @@ class EdgeNeXt(nn.Module):
         self.num_features = dims[-1]
         self.norm_pre = norm_layer(self.num_features) if head_norm_first else nn.Identity()
         self.head = nn.Sequential(OrderedDict([
-            ('global_pool', SelectAdaptivePool2d(pool_type=global_pool)),
-            ('norm', nn.Identity() if head_norm_first else norm_layer(self.num_features)),
-            ('flatten', nn.Flatten(1) if global_pool else nn.Identity()),
-            ('drop', nn.Dropout(self.drop_rate)),
-            ('fc', nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity())]))
+                ('global_pool', SelectAdaptivePool2d(pool_type=global_pool)),
+                ('norm', nn.Identity() if head_norm_first else norm_layer(self.num_features)),
+                ('flatten', nn.Flatten(1) if global_pool else nn.Identity()),
+                ('drop', nn.Dropout(self.drop_rate)),
+                ('fc', nn.Linear(self.num_features, num_classes) if num_classes > 0 else nn.Identity())]))
 
         named_apply(partial(_init_weights, head_init_scale=head_init_scale), self)
 
@@ -547,7 +548,7 @@ def edgenext_small(pretrained=False, **kwargs):
     # AA=True, No Mixup & Cutmix, DropPath=0.1, BS=4096, lr=0.006, multi-scale-sampler
     # Jetson FPS=20.47 versus 18.86 for MobileViT_S
     # For A100: FPS @ BS=1: 172.33 & @ BS=256: 3010.25 versus FPS @ BS=1: 93.84 & @ BS=256: 1785.92 for MobileViT_S
-    model_kwargs = dict(depths=(3, 3, 9, 3), dims=(48, 96, 160, 304), **kwargs)
+    model_kwargs = dict(depths=(3, 3, 9, 3), dims=(48, 96, 160, 304),  **kwargs)
     return _create_edgenext('edgenext_small', pretrained=pretrained, **model_kwargs)
 
 
@@ -568,3 +569,4 @@ def edgenext_small_rw(pretrained=False, **kwargs):
         depths=(3, 3, 9, 3), dims=(48, 96, 192, 384),
         downsample_block=True, conv_bias=False, stem_type='overlap', **kwargs)
     return _create_edgenext('edgenext_small_rw', pretrained=pretrained, **model_kwargs)
+
