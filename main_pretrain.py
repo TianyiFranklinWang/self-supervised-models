@@ -3,7 +3,7 @@ import os
 import torch
 
 import config
-from train import pretrain_train_main
+from train import pretrain_train
 from util.distributed import cleanup_distributed, init_distributed_device, is_primary
 from util.logger import create_logger, create_wandb_logger, prepare_log_folder, save_config
 
@@ -43,7 +43,7 @@ if __name__ == '__main__':
                     print("        - Enabling w&b logging system")
                 create_wandb_logger(config, log_folder, log_name)
 
-    pretrain_train_main(config, device=device, log_folder=log_folder)
+    pretrain_train(config, device=device, log_folder=log_folder)
 
     if config.distributed:
         torch.distributed.barrier()

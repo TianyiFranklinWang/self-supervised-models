@@ -121,7 +121,7 @@ def train_one_epoch(
         print("")
 
 
-def pretrain_train_main(config, device, log_folder=None):
+def pretrain_train(config, device, log_folder=None):
     if torch.cuda.is_available():
         torch.backends.cuda.matmul.allow_tf32 = True
         torch.backends.cudnn.benchmark = True
